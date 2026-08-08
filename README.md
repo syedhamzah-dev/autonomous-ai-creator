@@ -41,6 +41,7 @@ Feed API (Exposes GET /api/agent/feed for evaluators)
 * **Milestone 3**: Implemented the **Persona Engine** to construct stable, coherent technology/AI identities from a name and domain.
 * **Milestone 4**: Implemented the **Topic Discovery Service** with unified RSS/Atom source adapters, timezone/timestamp normalization, URL deduplication, and failure isolation.
 * **Milestone 5**: Implemented the **Editorial Judgment Engine** featuring deterministic heuristic scoring, automated rejection rules, and LLM mocked clients.
+* **Milestone 6**: Implemented the **Persistent Agent Memory** layer with agent-scoped local JSON storage and token keyword overlap checks.
 
 ---
 
@@ -171,6 +172,51 @@ Every decision contains explainable, context-specific reasons:
 
 ---
 
+## Persistent Agent Memory
+
+The **Persistent Agent Memory** layer is a core subsystem introduced in Milestone 6. It enables each autonomous agent to remember previously considered topics, published posts, and editorial decisions across different execution runs, preventing duplication and ensuring continuity.
+
+### Visual Architecture & Progression
+
+```text
+Foundation ──► Agent API ──► Persona ──► Topic Discovery ──► Editorial Judgment ──► Persistent Memory (CURRENT)
+```
+
+```text
+                 Agent
+                   │
+                   ▼
+              Memory Service
+                   │
+                   ▼
+             Memory Repository
+                   │
+                   ▼
+          Persistent Local Storage (data/memory/<agent-id>.json)
+```
+
+### Decoupled Storage Backend
+The repository follows a clean abstraction interface (`BaseMemory`) and is implemented as a local file-based repository `LocalFileMemoryRepository`. The rest of the application interacts with memories solely through the `MemoryService`, leaving the underlying storage implementation easily replaceable (e.g. migrating to an external provider like Breeth in later stages requires zero core logic rewrites).
+
+### Memory Schema & Categories
+Memory is strictly isolated per `agentId` and serialized into a structured `AgentMemory` schema mapping:
+* `memoryId`: unique entry UUID.
+* `agentId`: unique owner agent UUID.
+* `type`: Literal value representing:
+  * `PUBLISHED_POST`: Verbatim text and ID of generated posts.
+  * `PUBLISHED_TOPIC`: Title, sources, and timestamps of covered topics.
+  * `EDITORIAL_DECISION`: Details of previous ACCEPT/REJECT runs.
+* `createdAt`: Timezone-aware UTC timestamp.
+* `metadata`: Contextual keys (e.g. `topicId`, `sourceUrl`, `editorialDecision`, `publishedAt`).
+
+### Token Overlap Duplicate Detection
+To support future autonomous flows and prevent duplicate post publishing, the memory service provides `is_repetitive(agent_id, content)` capability:
+1. It splits check content and stored memory content into lowercased tokens.
+2. It filters out noise/stop-words (e.g. "the", "and", "in", "new", "discovered").
+3. It computes the keyword overlap ratio between the check tokens and stored tokens. If the overlap is `>= 60%`, the topic is recognized as repetitive, preventing the agent from publishing identical stories with slightly different headlines.
+
+---
+
 ## Project Structure
 
 ```text
@@ -199,6 +245,7 @@ autonomous-ai-creator/
 │   │   ├── __init__.py
 │   │   ├── agent.py
 │   │   ├── editorial.py    # EditorialDecision schemas
+│   │   ├── memory.py       # AgentMemory schemas
 │   │   ├── persona.py
 │   │   └── topic.py
 │   └── services/           # Business logic layer
@@ -206,7 +253,7 @@ autonomous-ai-creator/
 │       ├── agent.py        # Coordinates UUID creation and initialization flow
 │       ├── editorial.py    # EditorialJudgmentService logic
 │       ├── llm.py          # BaseLLMClient and MockLLMClient providers
-│       ├── memory.py       # BaseMemory persistent memory contract
+│       ├── memory.py       # BaseMemory contract and LocalFileMemoryRepository
 │       ├── persona.py      # Reusable Persona Generator Engine
 │       └── topic_discovery.py # TopicDiscoveryService and RSS/Atom adapters
 ├── docs/                   # Project logs and documentation
@@ -217,6 +264,7 @@ autonomous-ai-creator/
     ├── test_agent.py       # Checks agent init, validation, and feed APIs
     ├── test_editorial.py   # Editorial Judgment unit and integration tests
     ├── test_health.py      # Checks base service health
+    ├── test_memory.py      # Persistent agent memory tests
     └── test_topic_discovery.py # Topic Discovery parser and flow tests
 ```
 
@@ -337,7 +385,7 @@ pytest
 The following features are **NOT** implemented yet:
 - **LLM Persona Writing**: No LLM text generation or prompt orchestration logic.
 - **Autonomous Scheduler**: No loops running over 48 hours yet.
-- **Persistent Publishing Memory**: The system currently uses an ephemeral `InMemoryAgentRepository`. Persistent memory (Breeth) will be integrated in later milestones.
+- **External Memory Service**: External cloud-based memory layers (like Breeth) are not integrated yet.
 
 ---
 
@@ -348,6 +396,7 @@ The following features are **NOT** implemented yet:
 - [x] **Milestone 3**: Persona Engine implementation for stable AI technology identities.
 - [x] **Milestone 4**: Live AI Topic Discovery layer with unified RSS/Atom adapters.
 - [x] **Milestone 5**: Editorial Judgment Engine for persona-aware filter control.
-- [ ] **Milestone 6**: Memory integration via the **Breeth** persistent memory layer.
-- [ ] **Milestone 7**: LLM-powered persona-based article generation (Writer).
-- [ ] **Milestone 8**: Scheduler for autonomous loop execution, full 48-hour loop operation.
+- [x] **Milestone 6**: Persistent Agent Memory layer with local JSON file repositories and repetition checks.
+- [ ] **Milestone 7**: Memory integration via external memory provider Breeth.
+- [ ] **Milestone 8**: LLM-powered persona-based article generation (Writer).
+- [ ] **Milestone 9**: Scheduler for autonomous loop execution, full 48-hour loop operation.

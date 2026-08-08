@@ -119,3 +119,6 @@ cython_debug/
 
 # my additional files
 additional.txt
+
+# Local agent memory persistence
+data/memory/

@@ -32,13 +32,16 @@ The Autonomous AI Creator was intentionally built as a sequence of small, testab
       M5: Editorial Judgment Engine
                   │
                   ▼
-       M6: Memory integration (Planned)
+       M6: Persistent Agent Memory
                   │
                   ▼
-      M7: Content Generation (Planned)
+       M7: Memory integration via Breeth (Planned)
                   │
                   ▼
-     M8: Autonomous Publishing (Planned)
+       M8: Content Generation (Planned)
+                  │
+                  ▼
+      M9: Autonomous Publishing (Planned)
 ```
 
 Each milestone has its own scope, verification, documentation, and Git history. Planned milestones will connect editorial judgment with persistent memory, content generation, and autonomous scheduling.
@@ -54,6 +57,7 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M3** | Persona | Stable AI identity and editorial profile generation | `e7622f7cf45e3f634017b03258ede6e7284cf9d2`<br>`feat: add stable AI persona engine` |
 | **M4** | Discovery | Live AI/technology topic discovery | `845046010a96f177df3eb408bb8f67f441ee22d2`<br>`feat: add live AI topic discovery` |
 | **M5** | Editorial Judgment | Persona-aware topic selection and scoring | `ef6d57cad3e21870a20da42efa44513b8da0d6de`<br>`feat: add persona-aware editorial judgment` |
+| **M6** | Persistent Agent Memory | Local persistent agent-scoped memory & repetition checks | *Pending* |
 
 ---
 
@@ -2666,6 +2670,1075 @@ None.
 
 ---
 
+## Milestone 6 — Persistent Agent Memory
+
+### Date
+
+2026-08-08
+
+### Objective
+
+Introduce persistent local agent memory so that each agent can remember previously considered topics, published posts, and editorial decisions across different execution runs, preventing duplication and ensuring continuity over the 48-hour autonomous loop.
+
+### Coding-Agent Prompt
+
+<details>
+<summary><strong>View full coding-agent prompt</strong></summary>
+
+```text
+# Milestone 6 — Persistent Agent Memory
+
+We are beginning **Milestone 6** of the Autonomous AI Creator hackathon project.
+
+The previous milestones have established:
+
+* Project foundation
+* Agent initialization
+* Feed API
+* Stable persona engine
+* Live AI/technology topic discovery
+* Topic normalization
+* Source handling
+* Editorial judgment
+* ACCEPT / REJECT decisions
+* Editorial reasoning
+* Testing infrastructure
+* Professional README and AI Usage Log documentation
+
+The next capability is:
+
+> **Persistent memory that allows each agent to remember previously considered and published content across execution runs.**
+
+This milestone is important because the final hackathon system will operate autonomously for approximately 48 hours. The agent must not behave as if every execution starts from zero.
+
+---
+
+# IMPORTANT SCOPE
+
+Implement **Persistent Agent Memory**.
+
+Do NOT implement:
+
+* Breeth
+* external memory services
+* API keys
+* LLM-generated posts
+* autonomous scheduling
+* autonomous publishing
+* social-media integration
+* major changes to topic discovery
+* major changes to editorial judgment
+* multi-agent architecture
+
+Do NOT add Breeth merely because it could be used for memory.
+
+The memory system should be implemented locally using a reliable persistence mechanism already compatible with the project's technology stack.
+
+Keep the architecture extensible so that an external memory provider such as Breeth could be added later as an adapter without redesigning the application.
+
+---
+
+# 1. Inspect before coding
+
+Before making any changes:
+
+1. Inspect the entire repository.
+2. Inspect the current project structure.
+3. Inspect Git history.
+4. Inspect the latest Milestone 5 commit.
+5. Inspect the current agent state implementation.
+6. Inspect the persona implementation.
+7. Inspect topic discovery.
+8. Inspect topic candidate models.
+9. Inspect editorial judgment.
+10. Inspect existing tests.
+11. Inspect README.
+12. Inspect `docs/AI_USAGE_LOG.md`.
+
+Determine where memory belongs in the existing architecture.
+
+Do NOT recreate existing abstractions.
+
+Do NOT perform a large refactor.
+
+If a significant architectural change is necessary, explain why before implementing it.
+
+---
+
+# 2. Memory architecture
+
+Introduce a clean application-level memory abstraction.
+
+The intended architecture is:
+
+```text
+                 Agent
+                   │
+                   ▼
+              Memory Service
+                   │
+                   ▼
+             Memory Repository
+                   │
+                   ▼
+          Persistent Local Storage
+```
+
+Keep the application independent from the storage mechanism.
+
+The rest of the application should interact with memory through the memory service/repository rather than directly reading or writing persistence files.
+
+Use the existing project naming conventions.
+
+Do not introduce unnecessary abstraction layers.
+
+---
+
+# 3. Persistent storage
+
+Memory must survive beyond the lifetime of the current Python process.
+
+Use a simple reliable local persistence mechanism.
+
+Prefer an existing technology/dependency already present in the project.
+
+If the project does not already have an appropriate persistence mechanism, use a simple file-based JSON persistence layer rather than introducing a new database dependency.
+
+For example, a structure such as:
+
+```text
+data/
+└── memory/
+    ├── <agent-id>.json
+    └── <agent-id>.json
+```
+
+is acceptable.
+
+Do not hard-code a single global memory file.
+
+Memory must be isolated by agent.
+
+---
+
+# 4. Agent-scoped memory
+
+Every memory belongs to an `agentId`.
+
+For example:
+
+```text
+Agent A
+ └── Memory
+      ├── topic 1
+      ├── topic 2
+      └── post 1
+
+Agent B
+ └── Memory
+      ├── topic 1
+      └── decision 1
+```
+
+Agent A must never retrieve Agent B's memories.
+
+Do not use persona name as the primary identity.
+
+Use the existing `agentId`.
+
+---
+
+# 5. Memory model
+
+Create an explicit memory model.
+
+It should contain enough information to support future autonomous behavior.
+
+At minimum:
+
+```text
+memoryId
+agentId
+type
+content
+createdAt
+metadata
+```
+
+Use the project's existing Pydantic/model conventions.
+
+`createdAt` must use a timezone-aware UTC timestamp.
+
+---
+
+# 6. Memory types
+
+Support at least these memory categories:
+
+```text
+PUBLISHED_POST
+PUBLISHED_TOPIC
+EDITORIAL_DECISION
+```
+
+Use an enum or another controlled representation rather than arbitrary strings if that fits the current architecture.
+
+Do not create unnecessary memory types.
+
+---
+
+# 7. What the agent should remember
+
+The memory system must be capable of storing information such as:
+
+### Published topic
+
+```text
+Topic:
+Open-source AI model security vulnerability
+
+Type:
+PUBLISHED_TOPIC
+
+Source:
+https://example.com/article
+
+PublishedAt:
+2026-08-08T10:30:00Z
+```
+
+### Published post
+
+```text
+Type:
+PUBLISHED_POST
+
+Post ID:
+p123
+
+Text:
+<actual generated post>
+
+Topic:
+<topic>
+
+PublishedAt:
+<timestamp>
+```
+
+### Editorial decision
+
+```text
+Type:
+EDITORIAL_DECISION
+
+Topic:
+<topic>
+
+Decision:
+REJECT
+
+Reason:
+Not sufficiently relevant to the configured AI persona.
+```
+
+The memory layer should preserve enough context for future milestones to determine:
+
+* whether a topic has already been covered
+* whether a post has already been generated/published
+* whether an editorial decision was previously made
+* what sources were associated with previous activity
+
+Do not store arbitrary application state as memory.
+
+---
+
+# 8. Memory service operations
+
+Implement only the operations that future milestones genuinely need.
+
+At minimum:
+
+### Store
+
+```text
+store(agentId, memory)
+```
+
+Stores a memory.
+
+### Get
+
+```text
+get(agentId, memoryId)
+```
+
+Retrieves a specific memory.
+
+### Search
+
+```text
+search(agentId, query, limit)
+```
+
+Searches memories belonging only to that agent.
+
+### Recent
+
+```text
+recent(agentId, limit)
+```
+
+Returns recent memories in deterministic order.
+
+### Repetition check
+
+Provide a clean capability that allows future components to determine whether a topic/content is already represented in memory.
+
+For example:
+
+```text
+is_repetitive(agentId, content)
+```
+
+Do not build sophisticated semantic similarity infrastructure.
+
+For this milestone, implement a reliable deterministic approach appropriate to the storage mechanism.
+
+---
+
+# 9. Duplicate and repetition handling
+
+The memory layer should support the future flow:
+
+```text
+New Topic
+    ↓
+Search Agent Memory
+    ↓
+Previously covered?
+    ├── YES → avoid unnecessary repetition
+    └── NO  → continue
+```
+
+Do NOT change the Editorial Judgment Engine to make this decision automatically yet.
+
+Instead, expose the memory capability cleanly so the next autonomous stages can use it.
+
+Memory should answer questions.
+
+Editorial logic should decide what to do with those answers.
+
+---
+
+# 10. Persistence guarantees
+
+Verify that memory survives process restarts.
+
+The test should conceptually demonstrate:
+
+```text
+Process A
+    ↓
+Create agent
+    ↓
+Store memory
+    ↓
+Process ends
+
+Process B
+    ↓
+Load same agent
+    ↓
+Retrieve memory
+    ↓
+Memory still exists
+```
+
+Do not merely keep memory in a Python dictionary.
+
+A dictionary may be used as a temporary cache if genuinely useful, but it cannot be the source of truth.
+
+---
+
+# 11. Safe file handling
+
+If JSON/file persistence is used:
+
+* create the data directory automatically when required
+* handle missing files cleanly
+* handle empty memory safely
+* write valid JSON
+* avoid corrupting existing memory
+* use atomic/safe writes where practical
+* avoid accidentally deleting unrelated agent memory
+* handle malformed persistence files gracefully
+
+Do not silently erase memory when a file is malformed.
+
+Use appropriate error handling.
+
+---
+
+# 12. Concurrency considerations
+
+The final system may be queried repeatedly by the evaluator.
+
+Consider whether simultaneous reads/writes could corrupt the memory store.
+
+Use a simple appropriate mechanism for the project's expected scale.
+
+Do not build a distributed locking system.
+
+The goal is reliable local persistence, not production-scale infrastructure.
+
+---
+
+# 13. Memory should not break the agent
+
+Memory failures should be handled intentionally.
+
+For example:
+
+```text
+Memory read failure
+       ↓
+Clear error handling
+       ↓
+No corrupted state
+```
+
+Do not silently report that a memory operation succeeded when it failed.
+
+Do not silently delete memories to recover from errors.
+
+For critical memory operations, fail safely.
+
+---
+
+# 14. No fake historical activity
+
+Do NOT populate the real agent's memory with invented historical posts.
+
+Do NOT create fake published posts and claim they came from previous autonomous runs.
+
+Tests may use synthetic fixtures, but clearly mark them as test data.
+
+For example:
+
+```text
+TEST_MEMORY_TOPIC_001
+```
+
+Real production memory should represent actual agent activity.
+
+---
+
+# 15. Integration with current agent lifecycle
+
+Integrate memory with the existing agent architecture without breaking the current API.
+
+The existing:
+
+```text
+POST /api/agent/init
+```
+
+must continue to work.
+
+The existing:
+
+```text
+GET /api/agent/feed
+```
+
+must continue to work.
+
+Do not expose unnecessary new public API endpoints unless there is a strong architectural reason.
+
+The evaluator's API contract must remain unchanged.
+
+Memory is an internal capability at this stage.
+
+---
+
+# 16. Integration preparation for future publishing
+
+Prepare the architecture for the eventual autonomous loop:
+
+```text
+Live Topic Discovery
+        ↓
+Memory Check
+        ↓
+Editorial Judgment
+        ↓
+Content Generation
+        ↓
+Publishing
+        ↓
+Store Published Memory
+```
+
+Do not implement the complete loop yet.
+
+The important requirement is that future components can easily call the memory service.
+
+---
+
+# 17. Tests
+
+Create comprehensive deterministic tests.
+
+At minimum test:
+
+### Agent isolation
+
+1. Agent A stores a memory.
+2. Agent B cannot retrieve Agent A's memory.
+3. Agent A can retrieve its own memory.
+
+### Store
+
+4. Store a valid memory.
+5. Verify the memory receives/preserves a unique ID.
+6. Verify metadata is preserved.
+
+### Get
+
+7. Retrieve an existing memory.
+8. Request an unknown memory ID.
+9. Ensure an agent cannot retrieve another agent's memory by ID.
+
+### Search
+
+10. Store several memories.
+11. Search for a relevant keyword.
+12. Verify matching memories are returned.
+13. Verify search is agent-scoped.
+
+### Recent
+
+14. Store memories with different timestamps.
+15. Verify recent memories are returned in deterministic newest-first order.
+16. Verify the limit works.
+
+### Persistence
+
+17. Store memory.
+18. Recreate/reinitialize the repository.
+19. Retrieve the memory.
+20. Verify it survived the restart.
+
+### Repetition
+
+21. Check a previously stored topic.
+22. Verify it is recognized as repetitive.
+23. Check an unrelated topic.
+24. Verify it is not incorrectly marked repetitive.
+
+### Error handling
+
+25. Missing persistence file.
+26. Empty persistence file.
+27. Malformed persistence data.
+28. Invalid memory data.
+
+Run the **entire existing test suite**, not just Milestone 6 tests.
+
+Do not weaken existing tests.
+
+---
+
+# 18. README — REQUIRED
+
+The README is the first thing a hackathon judge will see on GitHub.
+
+Treat it as a primary project deliverable.
+
+After implementing Milestone 6, update `README.md`.
+
+Do NOT allow the README to become a plain technical dump.
+
+Review it as if you are a judge opening the repository for the first time.
+
+Maintain the existing visual style established in previous milestones.
+
+Add a concise section describing:
+
+### Persistent Memory
+
+Explain:
+
+* why memory is necessary
+* agent-scoped memory
+* supported memory types
+* persistence mechanism
+* repetition detection foundation
+* how memory fits into the autonomous pipeline
+
+Include an architecture visual where it genuinely improves understanding.
+
+For example:
+
+```text
+Topic Discovery
+       ↓
+Memory
+       ↓
+Editorial Judgment
+       ↓
+Future Content Generation
+       ↓
+Future Publishing
+       ↓
+Memory
+```
+
+Use Mermaid if the repository already supports it and it renders correctly.
+
+Otherwise use a clean ASCII diagram.
+
+Do NOT add decorative images just for the sake of having images.
+
+The README should remain concise and visually appealing.
+
+Also update the project progress/status section so it accurately reflects Milestone 6.
+
+Do not claim future autonomous publishing is complete.
+
+---
+
+# 19. README visual roadmap
+
+Maintain a clear progression in the README:
+
+```text
+Foundation
+    ↓
+Agent API
+    ↓
+Persona
+    ↓
+Topic Discovery
+    ↓
+Editorial Judgment
+    ↓
+Persistent Memory   ← CURRENT
+    ↓
+Content Generation
+    ↓
+Autonomous Scheduling
+    ↓
+Autonomous Publishing
+```
+
+Clearly distinguish:
+
+* implemented
+* in progress
+* planned
+
+Do not misrepresent future milestones as completed.
+
+---
+
+# 20. AI Usage Log — REQUIRED
+
+Update:
+
+```text
+docs/AI_USAGE_LOG.md
+```
+
+Add a complete:
+
+```text
+Milestone 6 — Persistent Agent Memory
+```
+
+entry.
+
+Follow the redesigned documentation style from the previous milestone.
+
+The entry must include:
+
+### Objective
+
+Why persistent memory is required for the autonomous creator.
+
+### Coding-Agent Prompt
+
+Record the **actual prompt used for Milestone 6**.
+
+Do not rewrite history.
+
+Do not create a shorter fake version.
+
+### What This Prompt Does
+
+Explain concisely:
+
+* what capability the prompt introduces
+* how agent-scoped memory works
+* why persistence is required
+* how memory supports future repetition detection
+* how the abstraction prepares for future storage providers
+* what this milestone deliberately does not implement
+
+### Implementation
+
+Describe what was actually implemented.
+
+### Verification
+
+Describe the actual tests and verification performed.
+
+### Outcome
+
+Describe the actual result.
+
+### Deviations
+
+If the implementation differs from the prompt, document it honestly.
+
+If there were no deviations, state:
+
+```text
+No material deviations.
+```
+
+### Git
+
+Record:
+
+* actual commit hash
+* exact commit message
+
+Do not fabricate these values.
+
+---
+
+# 21. Documentation quality
+
+After updating the README and AI Usage Log, inspect both as complete documents.
+
+Check:
+
+* heading hierarchy
+* consistent terminology
+* tables
+* diagrams
+* whitespace
+* code blocks
+* links
+* milestone status
+* technical accuracy
+* no duplicated sections
+* no future feature presented as complete
+
+The README should feel like a polished project landing page.
+
+The AI Usage Log should feel like a professional engineering/audit record.
+
+Do not add unnecessary walls of text.
+
+---
+
+# 22. Project structure review
+
+After implementation inspect the entire repository.
+
+Check for:
+
+* misplaced memory modules
+* duplicate memory abstractions
+* oversized files
+* circular imports
+* unused imports
+* dead code
+* inconsistent naming
+* unnecessary dependencies
+* accidental generated files
+* data files accidentally tracked
+* poor separation of responsibilities
+
+Fix only small issues directly related to Milestone 6.
+
+Do not perform an unrelated refactor.
+
+---
+
+# 23. Security review
+
+Before committing:
+
+Search the repository for:
+
+```text
+API_KEY
+SECRET
+TOKEN
+PASSWORD
+BREETH
+```
+
+Make sure no real credentials are present.
+
+Check:
+
+```text
+git diff
+git status
+```
+
+Do not stage:
+
+* `.env`
+* credentials
+* local configuration containing secrets
+* virtual environments
+* caches
+* generated files
+
+If a secret is discovered in Git history, do NOT rewrite history automatically.
+
+Report it.
+
+---
+
+# 24. Full regression testing
+
+Run:
+
+1. formatting/linting if configured
+2. complete existing test suite
+3. all Milestone 6 memory tests
+4. mocked provider tests
+5. integration tests if Breeth is safely configured
+6. application startup
+7. `/health`
+8. `/api/agent/init`
+9. `/api/agent/feed`
+
+Verify that existing API behavior has not changed unexpectedly.
+
+Do not remove old tests.
+
+Do not weaken assertions merely to make tests pass.
+
+---
+
+# 25. Git discipline
+
+This milestone must have its own focused commit.
+
+Do NOT:
+
+* amend previous milestone commits
+* squash commits
+* force-push
+* rewrite Git history
+
+Before committing:
+
+```bash
+git status
+git diff
+```
+
+Stage only Milestone 6 changes.
+
+Use the commit message:
+
+```text
+feat: add persistent agent memory
+```
+
+After committing:
+
+```bash
+git show --stat --oneline HEAD
+git status
+```
+
+Verify:
+
+* previous milestone commits remain intact
+* no secrets are committed
+* only intended files are included
+* working tree is clean
+
+Push to the configured remote.
+
+Verify the branch is synchronized.
+
+If push fails due to authentication or permissions, do not perform destructive Git operations. Report the exact error.
+
+---
+
+# 26. Final report
+
+After implementation and push, report:
+
+## Memory Architecture
+
+Show:
+
+```text
+Agent
+  ↓
+Memory Service
+  ↓
+Breeth Adapter
+  ↓
+Breeth
+```
+
+Explain the responsibilities of each layer.
+
+## Memory Capabilities
+
+Report:
+
+* store
+* search
+* retrieve
+* recent-memory access
+* agent isolation
+* supported memory types
+
+## Persistence
+
+Explain exactly what persistence was verified.
+
+Do not overclaim.
+
+## Failure Handling
+
+Explain how Breeth failures are handled.
+
+## Testing
+
+Report actual:
+
+* test count
+* passed
+* failed
+* mocked tests
+* integration tests
+* regression results
+
+Do not fabricate results.
+
+## Documentation
+
+Report:
+
+* README changes
+* AI Usage Log changes
+* Milestone 6 prompt recorded
+* "What This Prompt Does" explanation added
+
+## Git
+
+Report:
+
+* commit hash
+* exact commit message
+* push result
+* final `git status`
+
+## Next Milestone
+
+Recommend the next milestone only.
+
+The likely next milestone is:
+
+> **Content Generation** — convert an editorially accepted topic into a high-quality post that consistently follows the persona's voice and includes the required rationale and sources.
+
+Do NOT implement the next milestone.
+
+---
+
+# Final principle
+
+The purpose of Milestone 6 is to establish the memory foundation that turns the creator from:
+
+```text
+Discover → Judge → Forget
+```
+
+into:
+
+```text
+Discover
+    ↓
+Judge
+    ↓
+Remember
+    ↓
+Future cycle can recall previous activity
+```
+
+The eventual autonomous system should be able to operate over many cycles without repeatedly rediscovering and publishing the same ideas.
+
+Build the memory layer cleanly now so that future milestones can compose it without major architectural changes.
+
+```
+
+</details>
+
+### What This Prompt Does
+
+This prompt instructs the coding assistant to build a local persistent agent memory layer. It requires setting up an abstract interface (`BaseMemory`), scoping memories per `agentId`, supporting distinct categories (`PUBLISHED_POST`, `PUBLISHED_TOPIC`, `EDITORIAL_DECISION`), and implementing operations for storing, retrieving, listing, and checking duplicates using keyword repetition tests. It explicitly specifies using a local file-based JSON persistence mechanism to survive process restarts, and mandates testing isolation, persistence, search, and error handling. It explicitly defers external memory providers (like Breeth), post generation, scheduling, and publishing.
+
+### Scope Boundaries
+
+> **Implemented:** Local JSON file persistence under `data/memory/<agent-id>.json`, `AgentMemory` schema, `MemoryService` coordination layer, stop-word filtered keyword overlap checker, deterministic test suite.  
+> **Deferred:** Breeth memory database, post text generation, autonomous scheduling loops, automated publishing integrations.
+
+### Architecture Snapshot
+
+```mermaid
+flowchart TD
+    A[Agent Service / Publisher] --> B[MemoryService store/search]
+    B --> C[LocalFileMemoryRepository JSON read/write]
+    C --> D[Local Storage data/memory/agent-id.json]
+```
+
+### Implementation
+
+* **Git Configuration**: Configured `.gitignore` to ignore the runtime `data/memory/` directory.
+* **Model Schema**: Created `app/schemas/memory.py` representing `AgentMemory` with camelCase fields (UUIDs, timestamps, content, metadata).
+* **Base Contract**: Updated `BaseMemory` in `app/services/memory.py` with scoped methods: `store`, `get`, `search`, `recent`, `is_repetitive`.
+* **JSON Local Repository**: Implemented `LocalFileMemoryRepository` reading/writing individual JSON arrays under `data/memory/<agent_id>.json` with atomic file replaces to prevent data corruption.
+* **Keyword Match Search**: Developed keyword search matching query tokens case-insensitively and ranking them by overlap count.
+* **Token Overlap Repetition**: Developed a token overlap logic filtering stop-words and checking keyword overlap (ratio >= 60%) to prevent duplicate topic coverage.
+
+### Verification
+
+* **Deterministic Unit Tests**: Created `tests/test_memory.py` verifying:
+  - Agent isolation (A can access A's memory, B cannot).
+  - Verbatim store and get by memory ID (unknown IDs return `None`).
+  - Search ranking and limits.
+  - Newest-first recent list sorting.
+  - Cross-process persistence checks.
+  - Repetition matching on keyword overlaps.
+  - Error recovery from corrupted JSON or mismatching identities.
+* **Regression Suite**: Pytest verifies M1–M6 test runs. Confirmed all 40 tests pass successfully.
+* **Manual Verification**: Run `scratch/verify_memory.py` confirming cross-process persistence, isolation, and repetition gates.
+
+### Outcome
+
+Milestone 6 persistent local agent memory fully implemented, tested, and verified.
+
+### Deviations
+
+None.
+
+---
+
 ## Development Timeline
 
 ```text
@@ -2683,8 +3756,11 @@ None.
  │                 │
  │                 └──── M5 ── Editorial Judgment Engine
  │                       │     Aug 08, 2026
- │                       ▼
- │                     [Current State]
+ │                       │
+ │                       └──── M6 ── Persistent Agent Memory
+ │                             │     Aug 08, 2026
+ │                             ▼
+ │                           [Current State]
 ```
 
 ---
@@ -2713,10 +3789,11 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Stable Persona Engine**: Generates deterministic and consistent AI identities.
 * **Live Topic Discovery**: Fetches configured sources, normalizes URLs and datetimes, deduplicates URLs.
 * **Editorial Judgment Engine**: Evaluates candidates against persona, applies scoring and quality gates.
+* **Persistent Agent Memory**: Local persistent agent-scoped JSON storage with token keyword repetition checks.
 
 ### Intentionally Not Yet Implemented
 
-* **Persistent Publishing Memory**: The system currently uses an ephemeral `InMemoryAgentRepository` and lacks persistent DB memory.
+* **External Memory Service**: Connection to cloud memory providers like Breeth is not integrated yet.
 * **Final Post Generation**: Post writing and social media text formatting are deferred.
 * **Autonomous Scheduling**: Loops running over 48 hours are not implemented.
 * **Autonomous Publishing**: Publishing decisions are not yet automated.
@@ -2725,4 +3802,4 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 
 ## Next Planned Capabilities
 
-The next development stages will connect editorial judgment with persistent memory (using the **Breeth** persistent memory layer), content generation (LLM-powered Writer), scheduling, and autonomous publishing so that the initialized agent can continue operating autonomously.
+The next development stages will connect editorial judgment and memory with content generation (LLM-powered Writer), external database adapters (Breeth), and scheduling so that the initialized agent can continue operating autonomously.
