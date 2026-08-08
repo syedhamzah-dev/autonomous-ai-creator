@@ -35,11 +35,12 @@ Publishing Scheduler (Autonomously queues and posts over ~48h)
 Feed API (Exposes GET /api/agent/feed for evaluators)
 ```
 
-For this initial milestone, we have established the application foundation:
-- **FastAPI Core**: Minimal production-ready API configuration.
-- **Environment Management**: Robust settings management via `pydantic-settings`.
-- **Memory Contract**: Abstract persistent memory interface (`BaseMemory`) to cleanly plug in **Breeth** in future milestones.
-- **Automated Tests**: Basic Pytest setup verifying health check endpoints.
+### Milestone Progress
+* **Milestone 1**: Established the base FastAPI structure, settings validation, and base memory interface contracts.
+* **Milestone 2**: Implemented the core hackathon API contract. This includes:
+  - Agent initialization schema validations.
+  - An in-memory repository layer for temporary agent state tracking.
+  - Slim API handlers implementing `POST /api/agent/init` and `GET /api/agent/feed`.
 
 ---
 
@@ -54,23 +55,87 @@ autonomous-ai-creator/
 ├── app/                    # Primary application package
 │   ├── __init__.py
 │   ├── main.py             # App initialization and startup
+│   ├── api/                # Routing and endpoints
+│   │   ├── __init__.py
+│   │   ├── router.py       # Centrally maps all routing prefixes
+│   │   └── endpoints/
+│   │       ├── __init__.py
+│   │       ├── agent.py    # POST /api/agent/init & GET /api/agent/feed
+│   │       └── health.py   # GET /health check endpoint
 │   ├── core/               # Configuration settings and security
 │   │   ├── __init__.py
 │   │   └── config.py
-│   ├── api/                # Routing and endpoints
+│   ├── repositories/       # State tracking and repositories layer
 │   │   ├── __init__.py
-│   │   ├── router.py
-│   │   └── endpoints/
-│   │       ├── __init__.py
-│   │       └── health.py   # GET /health check endpoint
+│   │   └── agent.py        # BaseAgentRepository & InMemoryAgentRepository
+│   ├── schemas/            # Data verification schemas
+│   │   ├── __init__.py
+│   │   └── agent.py        # Pydantic schemas (Persona, Agent requests/responses)
 │   └── services/           # Decoupled system components (Memory, Discovery, LLM)
 │       ├── __init__.py
 │       └── memory.py       # BaseMemory persistent memory interface
+├── docs/                   # Project logs and documentation
+│   └── AI_USAGE_LOG.md     # Chronological log of agent development
 └── tests/                  # Automated test suite
     ├── __init__.py
     ├── conftest.py
-    └── test_health.py
+    ├── test_agent.py       # Checks agent init, validation, and feed APIs
+    └── test_health.py      # Checks base service health
 ```
+
+---
+
+## API Endpoints
+
+### 1. Health Check
+* **Route**: `GET /health`
+* **Response**:
+  ```json
+  {
+    "status": "healthy",
+    "app_name": "Autonomous AI Creator",
+    "app_env": "dev"
+  }
+  ```
+
+### 2. Initialize Agent
+* **Route**: `POST /api/agent/init`
+* **Headers**: `Content-Type: application/json`
+* **Request Body**:
+  ```json
+  {
+    "persona": {
+      "name": "Ada",
+      "domain": "AI Security"
+    }
+  }
+  ```
+* **Response Body**:
+  ```json
+  {
+    "agentId": "d20fa6c1-7bc4-4582-a108-ddad5839be57"
+  }
+  ```
+* **Validation**:
+  - `persona.name` must be a non-empty string.
+  - `persona.domain` must be a non-empty string.
+  - Whitespace-only values will fail validation with a `422 Unprocessable Entity` status code.
+
+### 3. Agent Feed
+* **Route**: `GET /api/agent/feed?agentId=<id>`
+* **Response Body (Success)**:
+  ```json
+  {
+    "posts": []
+  }
+  ```
+* **Response Body (Non-Existent Agent)**:
+  - If the `agentId` does not match an initialized agent, returns `404 Not Found`:
+  ```json
+  {
+    "detail": "Agent with ID 'nonexistent-id' does not exist."
+  }
+  ```
 
 ---
 
@@ -119,17 +184,6 @@ Start the local development server:
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Verify that the health check endpoint is responsive:
-* **Endpoint URL**: `http://127.0.0.1:8000/health`
-* **Response Payload**:
-  ```json
-  {
-    "status": "healthy",
-    "app_name": "Autonomous AI Creator",
-    "app_env": "dev"
-  }
-  ```
-
 ---
 
 ## Running Automated Tests
@@ -142,10 +196,21 @@ pytest
 
 ---
 
+## Current Limitations & Unimplemented Features
+The following features are **NOT** implemented yet:
+- **Live Topic Discovery**: Scrapers and news sources have not been added.
+- **LLM Persona Writing**: No LLM text generation or prompt orchestration logic.
+- **Editorial Scoring**: No scoring evaluations to filter out low-value news.
+- **Autonomous Scheduler**: No loops running over 48 hours yet.
+- **Persistent Publishing Memory**: The system currently uses an ephemeral `InMemoryAgentRepository`. Persistent memory (Breeth) will be integrated in later milestones.
+
+---
+
 ## Milestone Roadmaps & Future Integrations
 
 - [x] **Milestone 1**: Project foundation, configuration management, memory abstraction interface, and health verification.
-- [ ] **Milestone 2**: Memory integration via the **Breeth** persistent memory layer.
-- [ ] **Milestone 3**: LLM-powered editorial scoring and persona-based article generation.
-- [ ] **Milestone 4**: Topic discovery, RSS scraping, and news sources integration.
-- [ ] **Milestone 5**: Scheduler for autonomous loop execution, `/api/agent/init` and `/api/agent/feed` HTTP APIs.
+- [x] **Milestone 2**: API Contract & Agent Initialization State (In-Memory).
+- [ ] **Milestone 3**: Memory integration via the **Breeth** persistent memory layer.
+- [ ] **Milestone 4**: LLM-powered editorial scoring and persona-based article generation.
+- [ ] **Milestone 5**: Topic discovery, RSS scraping, and news sources integration.
+- [ ] **Milestone 6**: Scheduler for autonomous loop execution, full 48-hour loop operation.
