@@ -1,4 +1,6 @@
-from pydantic import Field
+import json
+from typing import List, Any
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -11,6 +13,34 @@ class Settings(BaseSettings):
     host: str = Field(default="0.0.0.0", validation_alias="HOST")
     port: int = Field(default=8000, validation_alias="PORT")
 
+    # RSS/Atom Feeds for Topic Discovery
+    discovery_feeds: List[str] = Field(
+        default=[
+            "https://techcrunch.com/category/artificial-intelligence/feed/",
+            "https://developer.nvidia.com/blog/feed/",
+            "https://aws.amazon.com/blogs/machine-learning/feed/",
+            "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
+        ],
+        validation_alias="DISCOVERY_FEEDS"
+    )
+
+    @field_validator("discovery_feeds", mode="before")
+    @classmethod
+    def parse_discovery_feeds(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return []
+            # Try parsing as JSON array
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            # Fallback to comma-separated values
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
+
     # Future integration keys (placeholders in configuration)
     # breeth_mcp_url: str | None = Field(default=None, validation_alias="BREETH_MCP_URL")
 
@@ -21,3 +51,4 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
+

@@ -38,7 +38,8 @@ Feed API (Exposes GET /api/agent/feed for evaluators)
 ### Milestone Progress
 * **Milestone 1**: Established the base FastAPI structure, settings validation, and base memory interface contracts.
 * **Milestone 2**: Implemented the core hackathon API contract (agent initialization, in-memory repository, slim FastAPI routers).
-* **Milestone 3**: Implemented the **Persona Engine** to construct stable, coherent technology/AI identities from a name and domain, ensuring identity consistency.
+* **Milestone 3**: Implemented the **Persona Engine** to construct stable, coherent technology/AI identities from a name and domain.
+* **Milestone 4**: Implemented the **Topic Discovery Service** with unified RSS/Atom source adapters, timezone/timestamp normalization, URL deduplication, and failure isolation.
 
 ---
 
@@ -82,6 +83,57 @@ When an agent is initialized:
 3. `PersonaService` deterministically generates a custom `PersonaProfile` (either from rich predefined technology templates or via a dynamic fallback generator for custom domains).
 4. The generated profile is persisted inside the `InMemoryAgentRepository` under the agent's unique UUID.
 5. All future modules (such as the future Editorial Judge and Writer) query the repository to consume the stable, structured profile rules.
+
+---
+
+## Topic Discovery Service
+
+The **Topic Discovery Service** is a core reusable component introduced in Milestone 4. It enables the agent to independently aggregate and normalize tech and AI developments from live information sources.
+
+### Discovery vs. Editorial Judgment
+It is critical to distinguish between these two layers:
+* **Topic Discovery**: Responsible only for answering the question *"What potentially relevant developments are available right now?"* It retrieves, parses, normalizes, and technically deduplicates topics.
+* **Editorial Judgment**: (Planned for a future milestone) Evaluates the suitability of discovered topics against the stable persona rules (e.g. principles, interests, topics to avoid). 
+
+The Topic Discovery Service does **NOT** make any publishing or scheduling decisions.
+
+### Architecture and Data Flow
+```text
+  Configured RSS/Atom Feeds (TechCrunch AI, NVIDIA Developer, AWS ML, MIT Tech Review)
+                                  │
+                                  ▼
+                   [TopicDiscoveryService.discover_topics]
+                                  │
+                     (Iterates through configured feeds)
+                                  ▼
+                       [RSSAtomAdapter (Unified)]
+                     (Fetches XML, detects feed format)
+                                  │
+                           (Parses items)
+                                  ▼
+                      [Normalization & Validation]
+                 - Converts publication time to UTC
+                 - Strips query trackers (utm_*) from URLs
+                 - Skips malformed items (missing title/URL)
+                                  │
+                                  ▼
+                     [Technical Deduplication]
+                 - Generates UUID5 based on normalized URL
+                 - Removes duplicates found in the same run
+                                  │
+                                  ▼
+                           [TopicCandidates]
+```
+
+### Configured Sources
+We start with four highly reputable technology and AI blogs, configured dynamically via environment variables (`DISCOVERY_FEEDS`) with robust fallback defaults:
+1. **TechCrunch AI category**: Tracks high-level technology industry news and venture activity.
+2. **NVIDIA Developer Blog**: Captures technical updates, hardware accelerators, and frameworks.
+3. **AWS Machine Learning Blog**: Covers cloud infrastructure and enterprise deployment patterns.
+4. **MIT Technology Review (AI Feed)**: Offers strong editorial analysis, policy, and research developments.
+
+### Error Handling & Failure Isolation
+To ensure high availability, the discovery service isolates source failures. If one feed experiences a connection timeout, DNS failure, or returns a 500 error, it is logged, but the discovery process **continues** processing candidates from all other healthy feeds.
 
 ---
 
@@ -239,7 +291,6 @@ pytest
 
 ## Current Limitations & Unimplemented Features
 The following features are **NOT** implemented yet:
-- **Live Topic Discovery**: Scrapers and news sources have not been added.
 - **LLM Persona Writing**: No LLM text generation or prompt orchestration logic.
 - **Editorial Scoring**: No scoring evaluations to filter out low-value news.
 - **Autonomous Scheduler**: No loops running over 48 hours yet.
@@ -252,7 +303,7 @@ The following features are **NOT** implemented yet:
 - [x] **Milestone 1**: Project foundation, configuration management, memory abstraction interface, and health verification.
 - [x] **Milestone 2**: API Contract & Agent Initialization State (In-Memory).
 - [x] **Milestone 3**: Persona Engine implementation for stable AI technology identities.
-- [ ] **Milestone 4**: Memory integration via the **Breeth** persistent memory layer.
-- [ ] **Milestone 5**: Live topic discovery, RSS scraping, and news sources integration.
+- [x] **Milestone 4**: Live AI Topic Discovery layer with unified RSS/Atom adapters.
+- [ ] **Milestone 5**: Memory integration via the **Breeth** persistent memory layer.
 - [ ] **Milestone 6**: LLM-powered editorial scoring and persona-based article generation (Editorial Judge & Writer).
 - [ ] **Milestone 7**: Scheduler for autonomous loop execution, full 48-hour loop operation.

@@ -115,3 +115,7 @@ cython_debug/
 .env
 .env.*
 !.env.example
+
+
+# my additional files
+additional.txt
