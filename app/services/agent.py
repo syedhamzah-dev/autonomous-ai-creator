@@ -32,6 +32,13 @@ class AgentService:
         profile = self.persona_service.generate_profile(persona.name, persona.domain)
         # Store serialized persona profile dict
         self.repository.save_agent(agent_id, profile.model_dump())
+
+        # Auto-trigger scheduling loop if enabled in configurations
+        from app.core.config import settings
+        from app.services.autonomous import agent_scheduler
+        if settings.autonomous_enabled:
+            agent_scheduler.start_agent_loop(agent_id, settings.autonomous_interval_seconds)
+
         return agent_id
 
     def get_agent_feed(self, agent_id: str) -> List[Dict[str, Any]]:

@@ -38,10 +38,13 @@ The Autonomous AI Creator was intentionally built as a sequence of small, testab
        M7: Autonomous Content Generation
                   │
                   ▼
-       M8: Autonomous Execution Loop & Scheduling (Planned)
+       M8: Autonomous Execution Loop & Scheduling
                   │
                   ▼
-       M9: Memory integration via Breeth (Planned)
+       M9: Autonomous Publishing & Feed Integration (Planned)
+                  │
+                  ▼
+      M10: Memory integration via Breeth (Planned)
 ```
 
 Each milestone has its own scope, verification, documentation, and Git history. Planned milestones will connect editorial judgment with persistent memory, content generation, and autonomous scheduling.
@@ -59,6 +62,7 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M5** | Editorial Judgment | Persona-aware topic selection and scoring | `ef6d57cad3e21870a20da42efa44513b8da0d6de`<br>`feat: add persona-aware editorial judgment` |
 | **M6** | Persistent Agent Memory | Local persistent agent-scoped memory & repetition checks | `c20c589a803890afdbb4741ceddd54e91722bec7`<br>`feat: add persistent agent memory` |
 | **M7** | Content Generation | Persona-consistent post text grounded in sources | `bdb265a657579875c1e27216423394c18deb45a7`<br>`feat: add autonomous content generation` |
+| **M8** | Scheduling Loop | Periodic autonomous cycle execution, states, locks, failure resilience | *Pending* |
 
 ---
 
@@ -3872,6 +3876,134 @@ Milestone 7 autonomous content generation layer fully implemented, tested, and v
 
 ---
 
+## Milestone 8 — Autonomous Execution Loop & Scheduling
+
+### Date
+
+2026-08-08
+
+### Objective
+
+Introduce a reliable autonomous execution mechanism and background scheduler that enables initialized agents to run periodically (discovery, persistent memory checks, editorial judgment, content generation, and draft storage) without additional manual triggers.
+
+### Coding-Agent Prompt
+
+<details>
+<summary><strong>View full coding-agent prompt</strong></summary>
+
+```text
+# Milestone 8 — Autonomous Execution Loop & Scheduling
+
+Implement a reliable autonomous execution mechanism that allows the agent to continue operating after initialization without receiving another human prompt.
+
+Prioritize:
+* correctness
+* clean architecture
+* deterministic behavior where possible
+* graceful failure handling
+* observability
+* testability
+* minimal scope
+* compatibility with the previous milestones
+
+Do not rebuild the project.
+
+---
+
+# IMPORTANT SCOPE BOUNDARY
+
+Implement:
+* autonomous execution
+* scheduling
+* execution orchestration
+* agent lifecycle/state
+* safe repeated execution
+* integration of existing M4–M7 components
+* execution logging/observability
+* tests
+* documentation
+
+Do NOT implement yet:
+* real social-media publishing
+* frontend/dashboard
+* image generation
+* engagement analytics
+* multi-agent architecture
+* new memory provider
+* Breeth integration
+* unnecessary infrastructure
+* complex distributed task queues
+* production Kubernetes/deployment infrastructure
+
+```
+
+</details>
+
+### What This Prompt Does
+
+This prompt instructs the coding assistant to create an orchestration service and background task-based scheduling layer. It requires setting up the `run_cycle` coordination flow across components (M4-M7), enforcing lifecycle states (`INITIALIZED`, `RUNNING`, `PAUSED`), implementing a local concurrency lock (preventing overlapping runs), integrating configurations for interval timers, establishing graceful failure handlers (ensuring discovery/memory crashes do not crash the scheduler), and testing the system programmatically without blocking real-time delays.
+
+### Scope Boundaries
+
+> **Implemented:** `AutonomousExecutionService` orchestrator, `AgentScheduler` async task coordinator, agent status and draft posts persistence extensions in repository, local overlap execution locks, and pytest suite.  
+> **Deferred:** Real social media API adapters, external database queues (Celery/Redis), production deployment integrations, publishing content to public `/feed` endpoint.
+
+### Architecture Snapshot
+
+```mermaid
+flowchart TD
+    A[Agent Scheduler] -->|Periodic Trigger| B[AutonomousExecutionService]
+    B -->|Check Lock| C{Cycle Already Active?}
+    C -->|No| D[Discover Topics]
+    C -->|Yes| E[Skip Overlap Cycle]
+    D --> F[Deduplication check via MemoryService]
+    F --> G[Editorial Judgment Engine]
+    G -->|ACCEPT| H[Content Generator Service]
+    H --> I[Store prepared post to drafts & memory]
+```
+
+### Implementation
+
+* **Settings Extensions**: Added Settings parameters `autonomous_enabled` (default `True`) and `autonomous_interval_seconds` (default `3600.0` seconds).
+* **Repository Lifecycle Extensions**: Modified `InMemoryAgentRepository` and `BaseAgentRepository` to support `save_prepared_post`, `get_prepared_posts`, `set_agent_status`, and `get_agent_status`.
+* **Execution Service**: Implemented `AutonomousExecutionService` coordinating cycles. If a candidate is rejected or repetitive, it is skipped; if accepted, a post is generated, saved to drafts list, and logged in persistent memory.
+* **Background Scheduler**: Added `AgentScheduler` leveraging `asyncio.create_task` loop. Bound `agent_scheduler.shutdown()` to lifespan app exit to prevent task resource leaks.
+* **Auto-Trigger**: Configured `AgentService.initialize_agent` to start the background scheduler loop for new agent IDs immediately.
+
+### Verification
+
+* **Deterministic Unit Tests**: Created `tests/test_autonomous.py` verifying:
+  - Agent status lifecycle transitions (Initialized -> Running -> Paused).
+  - Uninitialized agent blocks.
+  - Full cycle execution flow (rejections saved, accepted posts drafted).
+  - Repetition screening.
+  - Duplicate task start protection.
+  - Concurrency cycle overlap lock.
+  - Fail-safe resilience (RSS timeouts do not crash background scheduler task).
+* **Regression Suite**: Pytest verifies M1–M8 test runs. Confirmed all 53 tests pass successfully.
+* **Manual Verification**: Created `scratch/verify_scheduling.py` validating 1-second interval task schedules, logs, and draft storage.
+
+### Key Decisions
+
+* **Lightweight asyncio Task**: Used Python's built-in `asyncio.create_task` instead of introducing heavyweight external frameworks.
+* **Lifecycle Persisted in Repo**: Lifecycle statuses are stored alongside the persona, maintaining centralized state control.
+
+### Deviations
+
+None.
+
+### Outcome
+
+Milestone 8 background autonomous scheduler loop fully implemented, tested, and verified.
+
+### Git
+
+*Pending*
+
+`feat: add autonomous execution loop`
+
+---
+
 ## Development Timeline
 
 ```text
@@ -3895,8 +4027,11 @@ Milestone 7 autonomous content generation layer fully implemented, tested, and v
  │                             │
  │                             └──── M7 ── Autonomous Content Generation
  │                                   │     Aug 08, 2026
- │                                   ▼
- │                                 [Current State]
+ │                                   │
+ │                                   └──── M8 ── Autonomous Execution Loop & Scheduling
+ │                                         │     Aug 08, 2026
+ │                                         ▼
+ │                                       [Current State]
 ```
 
 ---
@@ -3927,15 +4062,15 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Editorial Judgment Engine**: Evaluates candidates against persona, applies scoring and quality gates.
 * **Persistent Agent Memory**: Local persistent agent-scoped JSON storage with token keyword repetition checks.
 * **Autonomous Content Generation**: Generates high-quality, grounded, persona-consistent social-media posts from accepted topics.
+* **Autonomous Execution Loop & Scheduling**: Background periodic execution cycles, state transitions, concurrency locking, and draft storages.
 
 ### Intentionally Not Yet Implemented
 
 * **External Memory Service**: Connection to cloud memory providers like Breeth is not integrated yet.
-* **Autonomous Scheduling**: Loops running over 48 hours are not implemented.
 * **Autonomous Publishing**: Publishing decisions are not yet automated.
 
 ---
 
 ## Next Planned Capabilities
 
-The next development stages will connect content generation and memory with scheduling and autonomous execution loops so that the initialized agent can run continuously without manual human prompts.
+The next development stages will connect generated draft posts to the persistent public feed endpoint while preserving chronological ordering and unique IDs.

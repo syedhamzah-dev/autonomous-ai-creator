@@ -4,6 +4,7 @@ from app.services.topic_discovery import TopicDiscoveryService, BaseSourceAdapte
 from app.services.llm import BaseLLMClient, MockLLMClient
 from app.services.editorial import EditorialJudgmentService
 from app.services.content_generator import ContentGeneratorService
+from app.services.autonomous import AutonomousExecutionService, agent_scheduler
 
 __all__ = [
     "BaseMemory", 
@@ -14,6 +15,8 @@ __all__ = [
     "BaseLLMClient",
     "MockLLMClient",
     "EditorialJudgmentService",
-    "ContentGeneratorService"
+    "ContentGeneratorService",
+    "AutonomousExecutionService",
+    "agent_scheduler"
 ]
 

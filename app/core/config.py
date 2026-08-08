@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     editorial_engine_type: str = Field(default="deterministic", validation_alias="EDITORIAL_ENGINE_TYPE")
     editorial_threshold: float = Field(default=6.0, validation_alias="EDITORIAL_THRESHOLD")
 
+    # Autonomous Loop & Scheduling Settings
+    autonomous_enabled: bool = Field(default=True, validation_alias="AUTONOMOUS_ENABLED")
+    autonomous_interval_seconds: float = Field(default=3600.0, validation_alias="AUTONOMOUS_INTERVAL_SECONDS")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
