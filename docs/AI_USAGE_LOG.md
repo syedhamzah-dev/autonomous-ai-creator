@@ -1,122 +1,1759 @@
 # AI Usage Log
 
-This log records the interactions and tasks performed by the AI coding assistant (Antigravity) during the development of the Autonomous AI Creator project.
+## Purpose
 
-## Milestone 1: Initial project foundation and memory abstraction
+This document records the AI-assisted development process used to build the Autonomous AI Creator hackathon project.
 
-**Date**: 2026-08-08
+Each milestone records the coding-agent prompt, what the prompt was intended to accomplish, the resulting implementation, technical decisions, verification, deviations, and Git history.
 
-### Tasks Performed
+The log is maintained as an authenticity and engineering-process record.
+
+## Development Approach
+
+The project was developed incrementally through independently scoped milestones.
+
+Each milestone was:
+- implemented separately
+- tested
+- documented
+- committed independently
+- pushed to the repository
+
+## Milestone Overview
+
+| Milestone | Capability | Commit Hash | Commit Message |
+| :--- | :--- | :--- | :--- |
+| **1** | Foundation & Memory Abstraction | `f6540e977f92edf0d4212103bd925b9e66bc5863` | `chore: initialize autonomous creator project` |
+| **2** | Agent Initialization & Feed API | `5b192df82eb6b579128899bede221f518397c74d` | `feat: implement agent initialization and feed API` |
+| **3** | Stable AI Persona Engine | `e7622f7cf45e3f634017b03258ede6e7284cf9d2` | `feat: add stable AI persona engine` |
+| **4** | Live AI Topic Discovery | *Pending* | `feat: add live AI topic discovery` |
+
+---
+
+## Milestone 1 — Foundation
+
+### Date
+
+2026-08-08
+
+### Objective
+
+Establish the initial project foundation, FastAPI service layout, environment settings validation, memory abstraction interface, and health check validation.
+
+### Coding-Agent Prompt
+
+> The exact original coding-agent prompt could not be recovered from the available repository history.
+
+### Verified Reconstruction
+
+Based on the implementation and Git history, this milestone focused on establishing the base FastAPI project structure, setting up environmental settings management with Pydantic, exposing a GET `/health` endpoint, defining the abstract `BaseMemory` interface, and verifying functionality using automated tests.
+
+*Note: The subsequent prompt received for reviewing and committing Milestone 1 was:*
+
+```text
+Before we continue to the next milestone, perform a final review of the work completed in Milestone 1.
+
+Do NOT add new application features.
+
+### Review
+
+Inspect the entire repository and verify:
+
+* project structure is clean and logical
+* no duplicate or unnecessary files exist
+* no secrets or credentials are committed
+* dependencies are justified
+* README accurately describes the current state
+* `.env.example` contains no real secrets
+* tests pass
+* the application starts successfully
+* `/health` works
+* the Breeth setup/test has not been falsely represented as an implemented application feature
+* the code is reasonably modular for future milestones
+
+Also verify that `docs/AI_USAGE_LOG.md` exists. If it does not exist, create it and record the actual Milestone 1 coding-agent work. Do not invent details that were not part of the work.
+
+### Git
+
+Check the Git diff and Git status carefully.
+
+Only stage files that belong to Milestone 1.
+
+Do NOT stage:
+
+* secrets
+* `.env` files containing credentials
+* virtual environments
+* caches
+* generated temporary files
+* unrelated files
+
+Run the relevant tests one final time.
+
+Then create a meaningful conventional commit for this milestone.
+
+Use this commit message unless there is a compelling reason to improve it:
+
+`chore: initialize autonomous creator project`
+
+After committing, report:
+
+1. Git commit hash
+2. Commit message
+3. Files included in the commit
+4. Test result
+5. Final project structure
+6. Any files intentionally excluded
+7. Current Git status
+```
+
+### What This Prompt Does
+
+This prompt instructs the coding assistant to finalize Milestone 1 by checking repository structure cleanliness, ensuring dependencies and configurations are secure, testing FastAPI health endpoints, verifying the memory abstraction (`BaseMemory`), creating `docs/AI_USAGE_LOG.md`, and initiating the Git commit workflow. It imposes thin route layout constraints and explicitly defers state management, agents, LLMs, and publishing.
+
+### Implementation Summary
 
 1. **Environment Initialization**:
-   - Created a local Python virtual environment (`.venv`) utilizing Python version 3.14.6.
-   - Initialized a standard Python `.gitignore` file to avoid tracking of `.venv`, environment variables, and cache files.
-   - Built a dependency mapping file `requirements.txt` listing `fastapi`, `uvicorn`, `pydantic`, `pydantic-settings`, `pytest`, and `httpx`.
-   - Setup a configuration template `.env.example`.
-
+   - Created a local Python virtual environment (`.venv`) using Python 3.14.6.
+   - Set up `.gitignore` to prevent tracking of build artifacts, caches, and `.env` credentials.
+   - Pinned project dependencies in `requirements.txt`.
+   - Setup template environment settings in `.env.example`.
 2. **Core API Implementation**:
-   - Designed modular FastAPI directory structures.
-   - Configured `app/core/config.py` to parse and validate settings using `pydantic-settings`.
-   - Created health-check endpoint `GET /health` inside `app/api/endpoints/health.py` returning service environment and status.
-   - Built the centralized FastAPI entry point `app/main.py` and router `app/api/router.py`.
-
+   - Constructed modular FastAPI directory structures under `app/`.
+   - Loaded and validated environments settings via `pydantic-settings` in `app/core/config.py`.
+   - Exposed a service health endpoint `GET /health` inside `app/api/endpoints/health.py`.
+   - Linked subrouters and initialized FastAPI application in `app/main.py` and `app/api/router.py`.
 3. **Memory Abstraction Design**:
-   - Set up an abstract memory model interface `BaseMemory` inside `app/services/memory.py` specifying critical method signatures (`store_post`, `retrieve_posts`, `search_memories`, `is_repetitive`) for future persistent memory (Breeth) integration.
-   - Defined `BreethMemoryPlaceholder` as an inactive template raising `NotImplementedError` to keep the code clear of fake mock functionality.
-
-4. **Testing & Verification**:
-   - Set up `tests/conftest.py` with pytest fixtures supplying module-scoped `TestClient`.
-   - Wrote tests targeting the health-check route in `tests/test_health.py`.
-   - Verified tests ran successfully (1 passed, 0 failed).
-   - Manually tested server boot and queried health routing payload with a PowerShell request.
-
-
-## Milestone 2: API Contract and In-Memory Agent Initialization
-
-**Date**: 2026-08-08
-
-### Objective
-Implement the hackathon API contract endpoints (`POST /api/agent/init` and `GET /api/agent/feed?agentId=<id>`) and store basic agent initialization state.
-
-### Summary of Implementation
-1. **API Schema Definition**:
-   - Created `app/schemas/agent.py` defining Pydantic models for validation.
-   - Enforced strict non-empty name and domain string constraints (`pydantic.StringConstraints(strip_whitespace=True, min_length=1)`) to ensure empty or whitespace-only inputs are rejected at request deserialization.
-   - Prepared `PostModel` schema for future post validation.
-2. **Repository Layer**:
-   - Built an abstract persistence contract `BaseAgentRepository` and its in-memory implementation `InMemoryAgentRepository` in `app/repositories/agent.py`.
-   - Designed a global `agent_repository` singleton for holding temporary agent state and persona data.
-3. **Business Logic Layer**:
-   - Created `AgentService` in `app/services/agent.py` separating API routing from state orchestration. Generates cryptographically unique agent UUIDs.
-4. **FastAPI Endpoints**:
-   - Designed route handlers in `app/api/endpoints/agent.py` mapping `POST /init` and `GET /feed`.
-   - Integrated the subrouter prefix `/api/agent` in the central API router `app/api/router.py`.
+   - Set up the abstract memory interface `BaseMemory` in `app/services/memory.py` outlining method contracts (`store_post`, `retrieve_posts`, `search_memories`, `is_repetitive`).
+   - Created `BreethMemoryPlaceholder` throwing `NotImplementedError` to keep contracts clear.
 
 ### Important Technical Decisions
-- **Decoupled Architecture**: Maintained clear division (API Controllers -> Service Layer -> Repository Layer). Swapping out the memory layer with Breeth in future milestones can be accomplished by writing a new repository class without touching route controllers.
-- **Strict Whitespace Handling**: Standardized Pydantic string validation to strip strings before validation, rejecting whitespace-only inputs with a 422 HTTP error.
-- **Explicit 404 Exceptions**: Ensured querying the feed of an unknown agent ID fails explicitly with a 404, satisfying evaluation criteria.
 
-### Tests Performed
-- Created `tests/test_agent.py` verifying successful initialization, missing payload validation, empty persona name/domain validation, empty feed responses for newly initialized agents, unknown agent IDs returning 404, and unique agent IDs generation across requests.
-- Executed the entire test suite (`pytest`), verifying all 8 tests pass successfully.
-- Triggered API requests manually on a live development server to verify the happy path and error cases.
+- **Decoupled Architecture**: Decoupled memory storage contracts from the implementation so that the Breeth memory layer can be swapped in without modifying any service logic.
+- **Fail-Fast Configuration**: Utilized Pydantic Settings validation on startup so that invalid configuration crashes the service immediately rather than failing silently later.
+
+### Testing & Verification
+
+- Created `tests/conftest.py` with pytest fixtures supplying module-scoped `TestClient`.
+- Wrote unit tests in `tests/test_health.py` validating that the health router returns HTTP 200 and correctly identifies environment metadata.
+- Executed `pytest` and confirmed tests passed.
 
 ### Outcome
-Milestone 2 API contract fully implemented, tested, documented, and verified.
 
-## Milestone 3: Persona Engine
+Milestone 1 foundation established, verified, and documented.
 
-**Date**: 2026-08-08
+### Deviations
+
+None.
+
+### Git Commit
+
+`f6540e977f92edf0d4212103bd925b9e66bc5863`
+
+`chore: initialize autonomous creator project`
+
+---
+
+## Milestone 2 — Agent Initialization & Feed API
+
+### Date
+
+2026-08-08
 
 ### Objective
-Implement the Persona Engine to transform the basic initialization data (`name` and `domain`) into a stable, rich, technology-focused internal persona profile. Do not implement live topic discovery, scheduling, publishing, or an Editorial Judge yet.
 
-### Coding-Agent Prompt Used
-The actual coding-agent prompt requested:
-1. Inspection of the repository (commits, tree, routes, state management, schemas, tests, memory placeholder, git status).
-2. Implementing a reusable persona system that turns `name` and `domain` into a stable profile.
-3. Defining fields: name, domain, identity, mission, core interests, editorial principles, writing style, audience, topics to avoid.
-4. Ensuring the persona remains stable and consistent across API calls (no randomness).
-5. Keeping persona creation separate from API routes (API -> Agent Service -> Persona Service -> Persona Profile).
-6. Deterministic persona construction to avoid unnecessary LLM dependencies.
-7. Integrating with the agent initialization process (`POST /api/agent/init` returns `agentId`, contract unchanged).
-8. Preparing for future editorial judgment.
-9. Writing comprehensive unit and integration tests.
-10. Updating documentation and logs.
+Implement the hackathon API contract endpoints (`POST /api/agent/init` and `GET /api/agent/feed?agentId=<id>`), validate inputs, and store basic agent initialization state.
 
-### Summary of Implementation
-1. **Schema Design**:
-   - Created `app/schemas/persona.py` containing the `PersonaProfile` Pydantic model with fields: `name`, `domain`, `identity`, `mission`, `core_interests`, `editorial_principles`, `writing_style`, `audience`, and `topics_to_avoid`.
-2. **Business Logic Layer (Persona Engine)**:
-   - Built `PersonaService` in `app/services/persona.py` which deterministically creates structured, tech-focused profiles.
-   - Designed rich predefined templates for common domains (e.g. "AI Security", "Machine Learning", "Developer Advocate", "Robotics", "Open Source", "Ethics", "Product Analyst") using custom, professional rules.
-   - Implemented a fallback generator that dynamically constructs technology-appropriate interests, style, and principles for arbitrary/custom domains (e.g. "Quantum Computing", "WebAssembly"), preserving capitalization.
-3. **Integration & Flow**:
-   - Updated `AgentService` in `app/services/agent.py` to instantiate `PersonaService`.
-   - Modified `initialize_agent` to generate the complete `PersonaProfile` and serialize it into the state repository rather than only saving the client request inputs.
-   - Maintained complete compatibility with existing endpoints and tests; `POST /api/agent/init` still returns the exact same client contract response structure `{"agentId": "uuid"}`.
-4. **Git History & State Retention**:
-   - Avoided any changes to previous Git commits, ensuring all previous history remains intact.
+### Coding-Agent Prompt
 
-### Important Architectural Decisions
-- **Deterministic Persona Generation**: Avoided using an LLM API at this stage to prevent network dependency, cost, and random fluctuations. A deterministic mapping ensures the persona remains 100% stable, repeatable, and easily testable, satisfying the requirements.
-- **Title Capitalization Preservation**: The fallback domain title generation preserves specialized casing like "WebAssembly" or "MLOps" instead of forcing generic sentence casing.
-- **Decoupled Architecture**: Strictly adhered to the flow (API Router -> Agent Service -> Persona Service -> Persona Profile) keeping route handlers thin and business logic separate.
+```text
+We are beginning **Milestone 2** of the Autonomous AI Creator hackathon project.
 
-### Tests Performed
-- Expanded `tests/test_agent.py` with 4 new tests (bringing the total to 12 tests):
-  - Verified a detailed profile is created from valid initialization data.
-  - Verified name and domain are preserved exactly.
-  - Verified persona identity, interests, and style are stable and consistent (no random changes).
-  - Verified different domains (e.g. "AI Security" vs "Machine Learning") produce appropriately different profile content.
-  - Verified fallback logic dynamically creates valid profiles for custom domains.
-  - Verified `PersonaService` directly via a pure unit test.
-- Executed `pytest` and confirmed all 12 tests pass successfully.
-- Confirmed the local development server boots cleanly and `/health`, `/api/agent/init`, and `/api/agent/feed` endpoints operate successfully.
+The previous milestone established the project foundation. Do NOT recreate or restructure the project from scratch.
 
-### Deviations from the Original Plan
-- **Milestone Reordering**: The user requested executing the **Persona Engine** for Milestone 3 rather than the originally planned Breeth memory integration. The roadmap in `README.md` was updated to reflect this adjustment.
+First inspect the existing repository, Git history, current project structure, README, tests, configuration, and AI Usage Log.
+
+Our goal in this milestone is to implement the **API contract and basic agent initialization state** required by the hackathon.
+
+Do NOT implement the autonomous AI system yet.
+
+---
+
+# 1. Hackathon API contract
+
+The evaluator will call exactly these endpoints.
+
+## Initialize
+
+`POST /api/agent/init`
+
+Request:
+
+```json
+{
+  "persona": {
+    "name": "Ada",
+    "domain": "AI Security"
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "agentId": "abc-123"
+}
+```
+
+## Feed
+
+`GET /api/agent/feed?agentId=abc-123`
+
+For this milestone, no posts have been generated yet, so a valid initialized agent should return:
+
+```json
+{
+  "posts": []
+}
+```
+
+Do not generate fake posts just to populate the endpoint.
+
+---
+
+# 2. Inspect before coding
+
+Before making changes:
+
+1. Inspect the current project tree.
+2. Inspect the previous milestone's implementation.
+3. Inspect the existing tests.
+4. Inspect configuration.
+5. Inspect the memory abstraction prepared for Breeth.
+6. Inspect `docs/AI_USAGE_LOG.md`.
+7. Inspect the latest Git commit.
+
+Determine how the new functionality should fit into the existing architecture.
+
+Do not unnecessarily rename, move, or recreate existing files.
+
+If the previous architecture has a genuine problem, explain it before making a significant structural change.
+
+---
+
+# 3. Agent initialization
+
+Implement:
+
+`POST /api/agent/init`
+
+Requirements:
+
+* Validate the request.
+* `persona.name` must be non-empty.
+* `persona.domain` must be non-empty.
+* Reject invalid requests with appropriate HTTP validation errors.
+* Generate a cryptographically reasonable unique `agentId`.
+* Store the initialized agent state.
+* Store the persona configuration associated with that agent.
+* Return the `agentId`.
+
+For now, simple in-memory state is acceptable.
+
+However, keep the state management behind a clean abstraction because later milestones will introduce persistent memory and Breeth.
+
+Do NOT implement Breeth persistence in this milestone unless it is already part of the existing architecture and requires no additional scope.
+
+Do NOT fake Breeth calls.
+
+---
+
+# 4. Feed endpoint
+
+Implement:
+
+`GET /api/agent/feed?agentId=<agentId>`
+
+For an initialized agent with no posts:
+
+```json
+{
+  "posts": []
+}
+```
+
+For an unknown `agentId`, return an appropriate HTTP error.
+
+Do NOT automatically initialize an unknown agent.
+
+Do NOT generate placeholder posts.
+
+---
+
+# 5. API schemas
+
+Use explicit request/response models appropriate for FastAPI.
+
+Create clean models for:
+
+* persona
+* agent initialization request
+* agent initialization response
+* feed response
+
+Prepare the architecture for the future post model:
+
+```text
+id
+createdAt
+text
+rationale
+sources
+```
+
+But do NOT implement post generation yet.
+
+---
+
+# 6. Separation of responsibilities
+
+Keep FastAPI route handlers thin.
+
+Business logic should live in appropriate services/repositories rather than being embedded directly in route functions.
+
+Maintain a clean separation between:
+
+```text
+API layer
+    ↓
+Application/service layer
+    ↓
+State/repository layer
+```
+
+Keep the future memory/Breeth layer replaceable.
+
+Do not introduce unnecessary abstractions merely for the sake of abstraction.
+
+---
+
+# 7. Tests
+
+Add automated tests for at least:
+
+1. Successful initialization.
+2. Missing persona.
+3. Empty persona name.
+4. Empty persona domain.
+5. Successful feed retrieval after initialization.
+6. Unknown agent ID.
+7. Unique agent IDs across multiple initialization calls.
+
+Run the **entire test suite**, including tests from Milestone 1.
+
+Do not only test the new functionality.
+
+---
+
+# 8. Documentation
+
+Update the README so that it accurately documents the current implementation.
+
+Include:
+
+* current architecture
+* API endpoints
+* request examples
+* response examples
+* how to run the API
+* how to run tests
+* current limitations
+* planned future components
+
+Explicitly state that the following are NOT implemented yet:
+
+* live topic discovery
+* editorial judgment
+* LLM-generated posts
+* autonomous scheduling
+* persistent publishing memory
+* autonomous publishing
+
+Do not document future functionality as if it already exists.
+
+---
+
+# 9. AI Usage Log
+
+Update:
+
+`docs/AI_USAGE_LOG.md`
+
+Add a new chronological entry for **Milestone 2**.
+
+Record:
+
+* milestone
+* date
+* objective
+* the actual prompt used
+* summary of implementation
+* important technical decisions
+* tests performed
+* outcome
+
+Do not fabricate information.
+
+The AI Usage Log should become a transparent record of the actual AI-assisted development process.
+
+Keep it readable and professionally formatted.
+
+---
+
+# 10. Project structure review
+
+After implementation, inspect the entire repository.
+
+Check for:
+
+* duplicate modules
+* unnecessary dependencies
+* oversized files
+* misplaced business logic
+* circular imports
+* inconsistent naming
+* dead code
+* accidental secrets
+* temporary/generated files
+* unnecessary configuration
+* poor separation of concerns
+
+Fix small structural problems that are directly related to this milestone.
+
+Do NOT perform a large unrelated refactor.
+
+The project should remain easy for another developer to understand.
+
+---
+
+# 11. Quality verification
+
+Before committing:
+
+1. Run formatting/linting if configured.
+2. Run the complete test suite.
+3. Start the application.
+4. Test `/health`.
+5. Test `/api/agent/init`.
+6. Test `/api/agent/feed`.
+7. Verify invalid requests.
+8. Verify unknown agent behavior.
+9. Inspect the final Git diff.
+
+Make sure the implementation matches the hackathon's API contract.
+
+---
+
+
+
+# 12. Git discipline, commit, and push
+
+This is an important hackathon requirement. The Git history must clearly show incremental, meaningful development.
+
+Before committing:
+
+1. Run `git status`.
+2. Inspect `git diff`.
+3. Inspect the files that will be staged.
+4. Make sure no secrets, API keys, credentials, `.env` files, virtual environments, caches, or generated temporary files are included.
+5. Make sure only Milestone 2 changes are included.
+6. Make sure the AI Usage Log accurately records this milestone.
+7. Run the complete test suite one final time.
+
+Then stage ONLY the files belonging to Milestone 2.
+
+Create this commit:
+
+```text
+feat: implement agent initialization and feed API
+```
+
+Do NOT amend the previous Milestone 1 commit.
+
+Do NOT squash commits.
+
+Do NOT create a generic commit such as:
+
+* `update`
+* `changes`
+* `final`
+* `fix`
+* `project completed`
+
+After creating the commit:
+
+1. Verify the commit with `git show --stat --oneline HEAD`.
+2. Verify the working tree with `git status`.
+3. Confirm the current branch.
+4. Push the new commit to the repository's configured remote.
+
+Use the normal configured remote and branch. Do NOT force-push.
+
+If pushing fails because authentication, permissions, or remote configuration is missing, do NOT change credentials or perform destructive Git operations. Report the exact error and stop.
+
+After a successful push, verify that the local branch is synchronized with the remote.
+
+---
+
+# 13. Final repository review
+
+After the push, perform one final review of the repository as if you were a hackathon evaluator.
+
+Check:
+
+### Code
+
+* Clean architecture
+* Thin API routes
+* Proper separation of services/repositories
+* No unnecessary duplication
+* No dead code
+* No accidental future functionality
+
+### API
+
+* `POST /api/agent/init`
+* `GET /api/agent/feed?agentId=<id>`
+* Correct validation
+* Correct error handling
+* Correct response structures
+
+### Tests
+
+* All tests pass.
+* Milestone 1 tests still pass.
+* Milestone 2 tests pass.
+
+### Documentation
+
+* README accurately reflects the current state.
+* `docs/AI_USAGE_LOG.md` contains the actual Milestone 2 prompt and implementation record.
+* No future functionality is falsely documented as complete.
+
+### Security
+
+* No secrets committed.
+* No `.env` containing credentials committed.
+* No unnecessary sensitive information in documentation or logs.
+
+### Git
+
+* Milestone 1 commit remains intact.
+* Milestone 2 has its own commit.
+* Commit message is meaningful.
+* Remote push succeeded.
+* Working tree is clean.
+
+---
+
+# 14. Final report
+
+After everything is complete, report:
+
+### Implementation
+
+* What was implemented.
+* What was intentionally not implemented.
+
+### Structure
+
+* Final project tree.
+* Any structural changes and why they were made.
+
+### Testing
+
+* Tests run.
+* Number passed/failed.
+* API verification results.
+
+### Documentation
+
+* README changes.
+* AI Usage Log changes.
+
+### Git
+
+* Previous commit.
+* New commit hash.
+* Exact commit message.
+* Branch name.
+* Push result.
+* Final `git status`.
+
+### Next milestone
+
+Give a short recommendation for the next milestone, but DO NOT implement it.
+
+Do not make any additional changes after the final commit and push.
+```
+
+### What This Prompt Does
+
+This prompt instructs the coding agent to build the hackathon API contract for agent initialization and feed retrieval. It requires checking constraints for empty or whitespace name/domain inputs, generating cryptographically secure IDs, and decoupling state logic. It explicitly defers discovery, LLM writing, editorial judgment, memory repetition checks, and scheduling.
+
+### Implementation Summary
+
+1. **API Schema Definition**:
+   - Created `app/schemas/agent.py` defining Pydantic models for inputs and outputs.
+   - Enforced non-empty persona constraints utilizing `pydantic.StringConstraints(strip_whitespace=True, min_length=1)`.
+   - Setup skeleton models for `PostModel` and `FeedResponse`.
+2. **Repository Layer**:
+   - Implemented abstract `BaseAgentRepository` and concrete `InMemoryAgentRepository` in `app/repositories/agent.py`.
+   - Set up a global singleton repository instance `agent_repository`.
+3. **Business Logic Layer**:
+   - Formed `AgentService` in `app/services/agent.py` to coordinate UUID creation and retrieval from repositories.
+4. **FastAPI Endpoints**:
+   - Added endpoint logic inside `app/api/endpoints/agent.py` and connected prefix routing in `app/api/router.py`.
+
+### Important Technical Decisions
+
+- **Decoupled Repositories**: Followed the Repository pattern so that the local in-memory dictionaries can easily be swapped with databases or memory systems in future phases.
+- **Strict Validation**: Standardized whitespace trimming at validation time, preventing blank or space-filled name/domain values.
+
+### Testing & Verification
+
+- Created `tests/test_agent.py` verifying:
+  - Successful initialization and unique UUID outputs.
+  - Rejection of missing, empty, or whitespace-only inputs.
+  - Empty feed outputs for newly initialized agents.
+  - Return of HTTP 404 for unknown agent IDs.
+- Run `pytest` to verify all 8 tests pass successfully.
 
 ### Outcome
-Milestone 3 (Persona Engine) is successfully implemented, verified, documented, and committed.
+
+Milestone 2 API contract fully implemented, tested, and verified.
+
+### Deviations
+
+None.
+
+### Git Commit
+
+`5b192df82eb6b579128899bede221f518397c74d`
+
+`feat: implement agent initialization and feed API`
+
+---
+
+## Milestone 3 — Stable Persona Engine
+
+### Date
+
+2026-08-08
+
+### Objective
+
+Implement the stable, reusable Persona Engine to construct consistent technology-focused AI profiles from the agent's name and domain.
+
+### Coding-Agent Prompt
+
+```text
+We are beginning **Milestone 3** of the Autonomous AI Creator hackathon project.
+
+The previous milestones established:
+
+* the project foundation,
+* FastAPI service,
+* agent initialization,
+* agent state management,
+* feed API contract,
+* tests,
+* documentation,
+* and the AI Usage Log.
+
+The previous Git commits must remain intact. Do NOT rewrite history, amend previous commits, squash commits, or rebuild the project from scratch.
+
+This milestone will implement the **Persona Engine**.
+
+The goal is to give each initialized agent a stable, coherent AI/technology identity that future topic discovery, editorial judgment, and post generation can use.
+
+Do NOT implement live topic discovery, autonomous scheduling, or publishing in this milestone.
+
+---
+
+# 1. Inspect the existing repository first
+
+Before changing anything:
+
+1. Inspect the complete project tree.
+2. Inspect the latest Git commits.
+3. Inspect the current API routes.
+4. Inspect the agent initialization service/state management.
+5. Inspect all existing schemas/models.
+6. Inspect the tests.
+7. Inspect `README.md`.
+8. Inspect `docs/AI_USAGE_LOG.md`.
+9. Inspect the current memory/Breeth abstraction.
+10. Check the current Git status.
+
+Understand the existing architecture before making changes.
+
+Do NOT create duplicate implementations.
+
+Do NOT unnecessarily rename or move existing files.
+
+If a structural problem genuinely prevents this milestone from being implemented cleanly, identify it and make only the smallest reasonable correction.
+
+---
+
+# 2. Persona Engine objective
+
+Implement a reusable persona system.
+
+The initialized agent already receives:
+
+```json
+{
+  "persona": {
+    "name": "Ada",
+    "domain": "AI Security"
+  }
+}
+```
+
+The Persona Engine should turn this basic configuration into a stable internal persona profile.
+
+The persona profile should conceptually contain:
+
+```text
+name
+domain
+identity
+mission
+core interests
+editorial principles
+writing style
+audience
+topics to avoid
+```
+
+Do not hard-code one specific persona such as "Ada".
+
+The system must work with arbitrary AI/technology personas supplied during initialization.
+
+For example:
+
+```text
+AI Security Researcher
+Machine Learning Engineer
+AI Product Analyst
+Developer Advocate
+Robotics Engineer
+Open Source Contributor
+AI Ethics Researcher
+```
+
+The system must remain focused on the AI and technology ecosystem.
+
+---
+
+# 3. Persona profile design
+
+Create a clean domain model/schema for the persona profile.
+
+At minimum, support:
+
+### Identity
+
+* name
+* domain
+* short identity description
+
+### Mission
+
+A concise description of what the persona exists to analyze, explain, or contribute to.
+
+### Core interests
+
+A list of topics that the persona consistently cares about.
+
+Examples:
+
+* AI security
+* model vulnerabilities
+* agent security
+* privacy
+* red teaming
+* AI infrastructure
+
+### Editorial principles
+
+Stable rules governing what the persona considers worth discussing.
+
+Examples:
+
+* prioritize technically meaningful developments
+* prefer evidence over hype
+* explain practical implications
+* distinguish research from speculation
+* avoid sensationalism
+* focus on developments that matter to practitioners
+
+### Writing style
+
+Define characteristics such as:
+
+* concise
+* technically grounded
+* analytical
+* clear
+* evidence-driven
+* accessible to technical readers
+
+### Audience
+
+Describe who the persona writes for.
+
+### Topics to avoid
+
+Define categories that should normally not be published.
+
+Examples:
+
+* unrelated entertainment
+* generic motivational content
+* political content unrelated to AI/technology
+* unsupported rumors
+* low-information promotional announcements
+
+Keep these configurable rather than hard-coded into every service.
+
+---
+
+# 4. Persona consistency
+
+The persona must remain stable after initialization.
+
+Do NOT randomly regenerate the persona profile every time the feed endpoint is called.
+
+The profile should be generated/established once for the initialized agent and then reused.
+
+If the same agent calls:
+
+`GET /api/agent/feed`
+
+multiple times, its persona identity must remain unchanged.
+
+Do not introduce randomness that could cause the persona to change between requests.
+
+---
+
+# 5. Persona generation architecture
+
+Separate persona creation from API routes.
+
+The architecture should remain approximately:
+
+```text
+API
+ ↓
+Agent Service
+ ↓
+Persona Service
+ ↓
+Persona Profile
+```
+
+Do not put persona construction logic directly inside FastAPI route handlers.
+
+Create appropriate interfaces/classes/functions based on the existing architecture.
+
+Avoid excessive abstraction.
+
+---
+
+# 6. LLM integration decision
+
+Do not blindly add an LLM API call just because this is an AI project.
+
+First determine whether an LLM is actually necessary for this milestone.
+
+The persona profile can initially be deterministically constructed from the supplied:
+
+* name
+* domain
+
+If an LLM integration is useful, isolate it behind a provider/service abstraction so that it can be replaced or tested easily.
+
+Do NOT hard-code API keys.
+
+Use environment variables for any future LLM configuration.
+
+Do NOT make external API calls during unit tests.
+
+Do NOT introduce a paid API dependency unless it is genuinely necessary.
+
+The goal is a reliable architecture that can later support LLM-powered generation.
+
+---
+
+# 7. Integration with initialized agent
+
+When `/api/agent/init` is called:
+
+```text
+Request
+   ↓
+Validate persona input
+   ↓
+Create agent
+   ↓
+Create stable persona profile
+   ↓
+Store agent + persona
+   ↓
+Return agentId
+```
+
+The existing API contract must remain unchanged:
+
+```json
+{
+  "agentId": "abc-123"
+}
+```
+
+Do NOT change the response structure unless the existing implementation requires it for correctness.
+
+The persona profile does not need to be exposed through the feed endpoint yet.
+
+---
+
+# 8. Prepare for future editorial judgment
+
+The Persona Engine should expose enough structured information for the future Editorial Judge to ask questions such as:
+
+```text
+Is this topic relevant to the persona?
+
+Does this topic match the persona's interests?
+
+Does it violate the persona's editorial principles?
+
+Would the persona's audience care?
+
+Is this topic inside the persona's AI/technology domain?
+```
+
+Do NOT implement the Editorial Judge yet.
+
+Only provide the clean persona data required by that future component.
+
+---
+
+# 9. Tests
+
+Add comprehensive tests for the Persona Engine.
+
+At minimum test:
+
+1. Persona profile is created from valid initialization data.
+2. Persona name is preserved.
+3. Persona domain is preserved.
+4. Persona identity is stable.
+5. Core interests are generated consistently.
+6. Editorial principles are generated consistently.
+7. Writing style is consistent.
+8. Different domains produce appropriately different profiles.
+9. Invalid persona data remains rejected.
+10. Existing Milestone 1 and Milestone 2 tests still pass.
+
+Avoid tests that depend on external APIs.
+
+If an LLM provider abstraction is introduced, mock it in tests.
+
+---
+
+# 10. Documentation
+
+Update `README.md` to explain:
+
+* what the Persona Engine does
+* why persona consistency matters
+* the persona profile structure
+* how persona information flows through the application
+* what is currently implemented
+* what remains for future milestones
+
+Do not claim that the agent is autonomous yet.
+
+Clearly state that:
+
+* live topic discovery is not implemented yet
+* editorial judgment is not implemented yet
+* autonomous publishing is not implemented yet
+* persistent publishing memory is not implemented yet
+
+---
+
+# 11. AI Usage Log
+
+Update:
+
+`docs/AI_USAGE_LOG.md`
+
+Add a chronological **Milestone 3** entry.
+
+Record:
+
+* milestone number
+* date
+* objective
+* the actual coding-agent prompt used
+* what was implemented
+* important architecture decisions
+* tests performed
+* outcome
+* any deviations from the original plan
+
+Do NOT invent work or prompts that were not actually performed.
+
+The AI Usage Log should remain an accurate audit trail.
+
+---
+
+# 12. Project structure review
+
+After implementation, inspect the entire repository again.
+
+Check for:
+
+* duplicate files
+* duplicate persona models
+* oversized modules
+* route handlers containing business logic
+* circular imports
+* unused dependencies
+* dead code
+* inconsistent naming
+* accidental secrets
+* temporary files
+* unnecessary abstractions
+* poor separation between API, services, models, and infrastructure
+
+Keep the project structure clean and understandable.
+
+Do not refactor unrelated code.
+
+---
+
+# 13. Full verification
+
+Before committing:
+
+1. Run formatting/linting if configured.
+2. Run the complete test suite.
+3. Start the application.
+4. Test `/health`.
+5. Test `/api/agent/init`.
+6. Verify that initialization creates a stable persona profile.
+7. Test `/api/agent/feed`.
+8. Verify that existing API behavior has not regressed.
+9. Inspect the complete Git diff.
+10. Check for accidentally staged secrets.
+
+The application must still satisfy the original hackathon API contract.
+
+---
+
+# 14. Git commit
+
+This milestone must have its own commit.
+
+Do NOT amend or squash previous commits.
+
+Before committing:
+
+```text
+git status
+git diff
+```
+
+Stage ONLY files belonging to Milestone 3.
+
+Then create a meaningful conventional commit.
+
+Use:
+
+```text
+feat: add stable AI persona engine
+```
+
+Do not use vague messages such as:
+
+```text
+update
+changes
+final
+fix
+done
+```
+
+After committing:
+
+1. Run `git show --stat --oneline HEAD`.
+2. Run `git status`.
+3. Verify the previous commits remain intact.
+4. Push the new commit to the configured remote.
+5. Do NOT force-push.
+6. Verify the local branch is synchronized with the remote.
+
+If push authentication or permissions fail, do NOT change credentials or perform destructive Git operations. Report the exact error.
+
+---
+
+# 15. Final report
+
+After the commit and push, provide:
+
+### Implementation
+
+* What was implemented.
+* What was intentionally not implemented.
+
+### Persona
+
+* Persona profile structure.
+* How consistency is maintained.
+* How future editorial judgment will consume the persona.
+
+### Architecture
+
+* Updated project tree.
+* Important architectural decisions.
+
+### Testing
+
+* Tests run.
+* Passed/failed counts.
+* API verification results.
+
+### Documentation
+
+* README updates.
+* AI Usage Log updates.
+
+### Git
+
+* Previous commit preserved.
+* New commit hash.
+* Exact commit message.
+* Push result.
+* Final Git status.
+
+### Next milestone
+
+Recommend the next milestone only.
+
+Do NOT implement the next milestone.
+
+The next major capability will likely be **live topic discovery**, but do not build it yet.
+
+Remember: this project is being evaluated for incremental development, code quality, autonomous behavior, editorial judgment, persona consistency, memory, and transparency. Keep every milestone focused, testable, documented, and independently committed.
+```
+
+### What This Prompt Does
+
+This prompt instructs the coding assistant to build a reusable, stable Persona Engine. It specifies the persona profile fields (identity, mission, interests, principles, style, audience, and avoided topics), requires that it be created exactly once upon agent initialization and stored in persistence to ensure 100% consistency across request invocations, decoupling routing from service logic, implementing deterministic profile generation to avoid unnecessary API dependencies, and verifying behavior with unit and integration tests. It explicitly defers discovery, editorial scoring, scheduling, and memory repetitions.
+
+### Implementation Summary
+
+1. **Schema Design**:
+   - Created `app/schemas/persona.py` detailing the `PersonaProfile` model.
+2. **Business Logic Layer**:
+   - Wrote `PersonaService` in `app/services/persona.py` defining rich custom templates for standard technology domains and fallback generators for custom domains.
+3. **Integration**:
+   - Integrated `PersonaService` in `AgentService.initialize_agent` to generate and persist the profile at UUID initialization.
+   - Preserved API request and response signatures exactly.
+
+### Important Technical Decisions
+
+- **Deterministic Generation**: Avoided using an LLM API at this stage to eliminate costs, network timeouts, and unpredictable/random persona updates.
+- **Preserved Capitalization**: Modified title generator to respect proper case notation (e.g. "WebAssembly", "MLOps").
+
+### Testing & Verification
+
+- Extended `tests/test_agent.py` to add 4 new tests verifying:
+  - Successful generation of detailed profiles from initialization data.
+  - Preservation of fields, stability across sequential reads, and differentiation between domains.
+  - Dynamic fallback generation.
+- Confirmed all 12 tests passed successfully.
+
+### Outcome
+
+Milestone 3 stable AI Persona Engine fully established.
+
+### Deviations
+
+- **Roadmap Reordering**: Swapped the priority of Milestone 3 and Milestone 4 memory/discovery integrations to execute the Persona Engine first, as requested. The README was updated to reflect this adjustment.
+
+### Git Commit
+
+`e7622f7cf45e3f634017b03258ede6e7284cf9d2`
+
+`feat: add stable AI persona engine`
+
+---
+
+## Milestone 4 — Live Topic Discovery
+
+### Date
+
+2026-08-08
+
+### Objective
+
+Enable the agent to independently discover current AI and technology topics from live information sources, parse feed items, normalize fields and timestamps, and technically deduplicate candidate topics.
+
+### Coding-Agent Prompt
+
+```text
+We are beginning **Milestone 4 — Live Topic Discovery** of the Autonomous AI Creator hackathon project.
+
+The previous milestones established:
+
+* project foundation
+* FastAPI application
+* agent initialization
+* agent state management
+* API contract
+* stable Persona Engine
+* tests
+* README documentation
+* AI Usage Log
+* incremental Git history
+
+The previous commits must remain intact.
+
+Do NOT rewrite history, amend previous commits, squash commits, or rebuild the project from scratch.
+
+This milestone has one primary objective:
+
+> **Enable the agent to independently discover current AI and technology topics from live information sources.**
+
+This is a foundational capability for the autonomous agent.
+
+Do NOT implement editorial judgment, autonomous scheduling, publishing, or final post generation yet.
+
+---
+
+# 1. Inspect the existing repository first
+
+Before writing code:
+
+1. Inspect the complete project tree.
+2. Inspect the latest Git commits.
+3. Inspect the current FastAPI routes.
+4. Inspect the agent service/state management.
+5. Inspect the Persona Engine.
+6. Inspect all existing models/schemas.
+7. Inspect the memory/Breeth abstraction.
+8. Inspect existing tests.
+9. Inspect `README.md`.
+10. Inspect `docs/AI_USAGE_LOG.md`.
+11. Check the current Git status.
+
+Understand the existing architecture before making changes.
+
+Do NOT create duplicate services or models.
+
+Do NOT unnecessarily move or rename existing files.
+
+Keep the existing architecture intact unless a small, justified change is necessary.
+
+---
+
+# 2. Topic Discovery objective
+
+Build a reusable **Topic Discovery Service**.
+
+Its responsibility is:
+
+```text
+Live information sources
+        ↓
+Fetch current information
+        ↓
+Parse source items
+        ↓
+Normalize items
+        ↓
+Create topic candidates
+        ↓
+Return candidates to future Editorial Judge
+```
+
+The discovery service should NOT decide whether a topic is worth publishing.
+
+That is the responsibility of the future Editorial Judgment milestone.
+
+The discovery service should answer:
+
+> "What potentially relevant AI/technology developments are available right now?"
+
+It should NOT answer:
+
+> "Should we publish this?"
+
+---
+
+# 3. Use real live information sources
+
+The hackathon explicitly requires live topic discovery.
+
+Do NOT use:
+
+* hard-coded topic lists
+* fake news
+* static sample JSON
+* generated placeholder topics
+* manually entered topics
+* fabricated URLs
+
+Start with reliable publicly accessible RSS/Atom feeds where possible.
+
+Choose a small set of reputable AI/technology sources.
+
+Examples of source categories include:
+
+* official AI company blogs
+* research organization blogs
+* major technology publications
+* developer/platform engineering blogs
+* AI research news sources
+
+Prefer sources that provide structured RSS/Atom feeds.
+
+Do NOT aggressively scrape websites if an official feed is available.
+
+Do NOT add sources merely to increase the number of sources.
+
+Prioritize source quality and reliability.
+
+Document the selected sources and why they were chosen.
+
+---
+
+# 4. Source abstraction
+
+Do not tightly couple the Topic Discovery Service to one RSS feed.
+
+Create a clean source abstraction so future sources can be added.
+
+Conceptually:
+
+```text
+TopicDiscoveryService
+        ↓
+SourceAdapter interface
+        ↓
+RSS/Atom source adapters
+```
+
+The exact implementation should follow the existing project architecture.
+
+Each source adapter should be responsible for retrieving and parsing its source.
+
+The discovery service should be responsible for combining and normalizing results.
+
+Avoid unnecessary abstraction if the existing project is small.
+
+---
+
+# 5. Topic candidate model
+
+Create a structured model for a discovered topic.
+
+At minimum include:
+
+```text
+id
+title
+summary
+source
+sourceUrl
+publishedAt
+discoveredAt
+```
+
+You may add useful fields if justified, such as:
+
+```text
+sourceName
+category
+author
+```
+
+Do NOT add editorial fields such as:
+
+```text
+editorialScore
+shouldPublish
+relevanceScore
+decision
+```
+
+Those belong to the future Editorial Judge.
+
+The distinction between:
+
+**discovery**
+
+and
+
+**editorial judgment**
+
+must remain clear.
+
+---
+
+# 6. Live retrieval
+
+The discovery system should:
+
+1. Fetch the configured live sources.
+2. Parse available items.
+3. Convert them into the internal topic model.
+4. Normalize timestamps.
+5. Normalize URLs.
+6. Remove malformed items.
+7. Return usable topic candidates.
+
+Handle real-world failures gracefully.
+
+For example:
+
+* source unavailable
+* timeout
+* malformed feed
+* invalid item
+* missing title
+* missing URL
+* unexpected response format
+
+A failure from one source should NOT necessarily prevent other sources from being processed.
+
+The service should return usable results from healthy sources.
+
+Do not silently hide all errors.
+
+Use appropriate logging.
+
+---
+
+# 7. Time handling
+
+The hackathon feed requires UTC ISO 8601 timestamps.
+
+Use timezone-aware datetime objects.
+
+Normalize source publication timestamps into UTC.
+
+Do NOT use naive datetimes where timezone information is required.
+
+Keep:
+
+```text
+publishedAt
+discoveredAt
+```
+
+semantically distinct.
+
+`publishedAt` = when the source says the item was published.
+
+`discoveredAt` = when our agent discovered it.
+
+---
+
+# 8. Deduplication at discovery level
+
+Implement basic technical deduplication.
+
+For example, the same article may appear through multiple feeds.
+
+Use stable signals such as:
+
+* normalized URL
+* canonical URL where available
+* deterministic content fingerprint when appropriate
+
+Do NOT use Breeth for this yet.
+
+Do NOT implement semantic similarity or sophisticated memory-based repetition detection yet.
+
+That will come in a later memory/editorial milestone.
+
+The discovery service should simply prevent obvious duplicate source items from becoming duplicate candidates in the same discovery run.
+
+---
+
+# 9. Persona-aware discovery
+
+The Topic Discovery Service should be capable of receiving the initialized persona profile.
+
+However, do NOT implement editorial judgment.
+
+The persona may be used only for lightweight source/topic scoping.
+
+Avoid building a complicated relevance model at this stage.
+
+The important requirement is that the architecture allows the future Editorial Judge to evaluate candidates against the persona.
+
+Do not prematurely implement the actual publishing decision.
+
+---
+
+# 10. Discovery interface
+
+Create a clean service interface such as conceptually:
+
+```text
+discover_topics(persona)
+```
+
+or an equivalent design appropriate to the existing architecture.
+
+The returned result should contain structured topic candidates.
+
+Do not expose raw RSS parser objects throughout the application.
+
+Keep third-party feed-library details inside the source adapter/infrastructure layer.
+
+---
+
+# 11. Testing strategy
+
+This milestone must have strong tests.
+
+Do NOT make unit tests depend on the live internet.
+
+Create deterministic tests using mocked/fake source responses.
+
+Test at minimum:
+
+### Source parsing
+
+1. Valid RSS item.
+2. Valid Atom item if supported.
+3. Missing title.
+4. Missing URL.
+5. Malformed item.
+6. Invalid publication timestamp.
+
+### Discovery
+
+7. Multiple sources.
+8. One source failing while another succeeds.
+9. Duplicate URLs.
+10. Empty source response.
+11. Normalized UTC timestamps.
+12. `discoveredAt` is generated correctly.
+
+### Integration
+
+13. Topic Discovery Service returns the expected internal model.
+14. Existing Milestone 1–3 tests still pass.
+
+If the project includes integration tests that intentionally contact real feeds, keep them separate from the deterministic unit-test suite and make their purpose explicit.
+
+Do not make the normal test command depend on external network availability.
+
+---
+
+# 12. Reliability and observability
+
+Add sensible logging around discovery.
+
+Logs should help identify:
+
+* discovery started
+* source being fetched
+* source success
+* source failure
+* number of items received
+* number of candidates produced
+* number of duplicates removed
+
+Do NOT log:
+
+* API keys
+* credentials
+* environment secrets
+* unnecessary personal information
+
+Keep logging useful without producing excessive noise.
+
+---
+
+# 13. Do NOT create a public discovery endpoint unless necessary
+
+The hackathon only requires:
+
+```text
+POST /api/agent/init
+GET /api/agent/feed
+```
+
+Do not expose a new public endpoint such as:
+
+```text
+GET /api/topics
+```
+
+just for debugging.
+
+If manual testing is necessary, prefer:
+
+* unit tests
+* an internal service invocation
+* a small development-only script that is clearly separated from production API routes
+
+Do not change the evaluator-facing API contract unnecessarily.
+
+---
+
+# 14. Prepare for future autonomy
+
+The eventual architecture should become:
+
+```text
+              ┌───────────────┐
+              │ Live Sources  │
+              └───────┬───────┘
+                      ↓
+              ┌───────────────┐
+              │Topic Discovery│
+              └───────┬───────┘
+                      ↓
+              ┌───────────────┐
+              │ Topic         │
+              │ Candidates    │
+              └───────┬───────┘
+                      ↓
+              ┌───────────────┐
+              │ Editorial     │
+              │ Judge         │
+              └───────────────┘
+```
+
+Do NOT implement the Editorial Judge in this milestone.
+
+Do NOT implement the scheduler in this milestone.
+
+Do NOT implement publishing in this milestone.
+
+---
+
+# 15. Configuration
+
+Source URLs/configuration should not be scattered throughout the code.
+
+Use the existing configuration system.
+
+If appropriate, define configurable source feeds through environment/configuration.
+
+Provide safe defaults for public feed URLs where appropriate.
+
+Do not require users to manually edit Python source code to change sources.
+
+Do not commit secrets.
+
+Update `.env.example` if new environment configuration is required.
+
+Do not add API keys if the selected sources do not require them.
+
+---
+
+# 16. Documentation
+
+Update `README.md` with:
+
+### Topic Discovery
+
+Explain:
+
+* what the Topic Discovery Service does
+* what live sources are currently used
+* why those sources were selected
+* how sources are parsed
+* how duplicates are handled
+* how source failures are handled
+* how timestamps are normalized
+* what the discovery service deliberately does NOT do
+
+Clearly distinguish:
+
+```text
+Discovery ≠ Editorial Judgment
+```
+
+Also update the architecture section to show the new discovery layer.
+
+Do not claim autonomous publishing yet.
+```
+
+### What This Prompt Does
+
+This prompt instructs the coding assistant to build a reusable **Topic Discovery Service** with a clean source adapter abstraction (`BaseSourceAdapter` and `RSSAtomAdapter`), selecting real-world AI and technology feeds (such as TechCrunch, NVIDIA, AWS, MIT Tech Review), normalising fields and timestamps to UTC ISO 8601, implementing basic URL-based run-time deduplication, isolating feed failures so that one broken source does not halt discovery, and implementing deterministic tests to verify all behaviors. It explicitly defers editorial judgment, final content writing, memory repetitions, and scheduling.
+
+### Implementation Summary
+
+1. **Configuration**:
+   - Added `discovery_feeds` list in settings with dynamic parser validator to process environment strings/JSON.
+   - Added `DISCOVERY_FEEDS` to `.env.example`.
+2. **Schema Definition**:
+   - Created `app/schemas/topic.py` defining the `TopicCandidate` Pydantic model.
+3. **Discovery Logic**:
+   - Developed `app/services/topic_discovery.py` featuring:
+     - `normalize_url` helper to strip tracking headers (`utm_*`) and sanitize hosts.
+     - `parse_datetime` helper translating RFC 822 and ISO 8601 into UTC timezone-aware datetimes.
+     - `RSSAtomAdapter` unified XML parser handling RSS and Atom feeds.
+     - `TopicDiscoveryService` managing requests, tracking unique URLs, generating stable UUIDs, and isolating connection errors.
+4. **Export configuration**:
+   - Exposed exports in package `__init__.py` files.
+
+### Important Technical Decisions
+
+- **Stable UUID Generation**: Used `uuid.uuid5(uuid.NAMESPACE_URL, normalized_url)` to guarantee that identical URLs generate identical topic candidate IDs, simplifying technical deduplication.
+- **Fail-Safe HTTP Isolation**: Wrapped feed fetch requests in try-except blocks so that network failures or server errors on a single feed are logged and isolated, returning healthy results from other feeds.
+- **Standard Library XML Parsing**: Used Python's standard `xml.etree.ElementTree` to keep dependencies clean and small.
+
+### Testing & Verification
+
+- Created `tests/test_topic_discovery.py` verifying:
+  - URL normalization and datetime parser behaviors.
+  - Successful RSS and Atom parsing.
+  - Graceful skips of items missing titles or links.
+  - Recovery from malformed dates.
+  - Discovery execution across multiple sources.
+  - Isolation of failed connection runs.
+  - In-run duplicate URL filtering.
+  - Valid return structures.
+- All 25 tests pass successfully.
+- Conducted controlled live verification using `scratch/verify_discovery.py` confirming 150 candidates fetched successfully with active deduplication, timezone-aware UTC stamps, and isolated HTTP 404 test runs.
+
+### Outcome
+
+Milestone 4 Topic Discovery layer implemented, tested, and verified.
+
+### Deviations
+
+None.
+
+### Git Commit
+
+*Pending*
+
+`feat: add live AI topic discovery`
