@@ -1,3 +1,3 @@
-# Schemas package for data validation
 from app.schemas.topic import TopicCandidate
+from app.schemas.editorial import EditorialDecision
 

@@ -26,7 +26,8 @@ Each milestone was:
 | **1** | Foundation & Memory Abstraction | `f6540e977f92edf0d4212103bd925b9e66bc5863` | `chore: initialize autonomous creator project` |
 | **2** | Agent Initialization & Feed API | `5b192df82eb6b579128899bede221f518397c74d` | `feat: implement agent initialization and feed API` |
 | **3** | Stable AI Persona Engine | `e7622f7cf45e3f634017b03258ede6e7284cf9d2` | `feat: add stable AI persona engine` |
-| **4** | Live AI Topic Discovery | *Pending* | `feat: add live AI topic discovery` |
+| **4** | Live AI Topic Discovery | `845046010a96f177df3eb408bb8f67f441ee22d2` | `feat: add live AI topic discovery` |
+| **5** | Editorial Judgment Engine | *Pending* | `feat: add persona-aware editorial judgment` |
 
 ---
 
@@ -1754,6 +1755,893 @@ None.
 
 ### Git Commit
 
-*Pending*
+`845046010a96f177df3eb408bb8f67f441ee22d2`
 
 `feat: add live AI topic discovery`
+
+---
+
+## Milestone 5 — Editorial Judgment
+
+### Date
+
+2026-08-08
+
+### Objective
+
+Build an Editorial Judgment Engine that evaluates discovered AI/technology topics against the agent's persona and intentionally decides which topics are worth publishing and which should be rejected.
+
+### Coding-Agent Prompt
+
+```text
+We are beginning **Milestone 5 — Editorial Judgment** of the Autonomous AI Creator hackathon project.
+
+The previous milestones established:
+
+* project foundation
+* FastAPI application
+* agent initialization
+* agent state management
+* hackathon API contract
+* stable AI Persona Engine
+* live Topic Discovery
+* source adapters
+* topic candidate normalization
+* timestamp normalization
+* basic discovery-level deduplication
+* deterministic tests
+* documentation
+* complete AI Usage Log
+* incremental Git history
+
+The previous commits must remain intact.
+
+Do NOT rewrite history, amend previous commits, squash commits, or rebuild the project from scratch.
+
+This milestone has one primary objective:
+
+> **Build an Editorial Judgment Engine that evaluates discovered AI/technology topics against the agent's persona and intentionally decides which topics are worth publishing and which should be rejected.**
+
+This milestone is critical to the hackathon requirement:
+
+> Not every discovered topic deserves publishing.
+
+The system must demonstrate genuine editorial judgment.
+
+Do NOT implement autonomous scheduling, final post generation, or autonomous publishing yet.
+
+---
+
+# 1. Inspect the existing repository first
+
+Before making any changes:
+
+1. Inspect the complete project tree.
+2. Inspect Git history.
+3. Inspect current Git status.
+4. Inspect the latest Milestone 4 commit.
+5. Inspect the Persona Engine.
+6. Inspect the Topic Discovery Service.
+7. Inspect the Topic Candidate model.
+8. Inspect source adapters.
+9. Inspect existing configuration.
+10. Inspect existing tests.
+11. Inspect `README.md`.
+12. Inspect `docs/AI_USAGE_LOG.md`.
+13. Inspect the Breeth/memory abstraction.
+14. Understand how an initialized `agentId` maps to its persona.
+
+Do not duplicate existing models or services.
+
+Do not unnecessarily restructure the project.
+
+If a genuine architectural problem prevents this milestone from fitting cleanly into the current architecture, identify it and make the smallest justified change.
+
+---
+
+# 2. Editorial Judgment objective
+
+Create a dedicated **Editorial Judgment Service**.
+
+The architecture should conceptually become:
+
+```text
+Live Sources
+     ↓
+Topic Discovery
+     ↓
+Topic Candidates
+     ↓
+Persona
+     ↓
+Editorial Judgment
+     ↓
+ACCEPT / REJECT
+```
+
+The Topic Discovery Service answers:
+
+> What is happening?
+
+The Editorial Judgment Engine answers:
+
+> Is this worth publishing for this specific persona and audience?
+
+Keep these responsibilities separate.
+
+---
+
+# 3. Editorial decision model
+
+Create a structured editorial decision model.
+
+At minimum include:
+
+```text
+topicId
+decision
+score
+reasons
+evaluatedAt
+```
+
+Where:
+
+```text
+decision = ACCEPT | REJECT
+```
+
+You may add additional structured fields if they improve explainability, such as:
+
+```text
+relevanceScore
+freshnessScore
+significanceScore
+sourceQualityScore
+personaFitScore
+confidence
+```
+
+However, do not add unnecessary complexity.
+
+The decision model must be deterministic in structure even if an LLM is used internally.
+
+---
+
+# 4. Publishing standards
+
+The Editorial Judgment Engine must evaluate topics using explicit publishing criteria.
+
+At minimum consider:
+
+### 1. Persona relevance
+
+Does the topic fit the agent's domain and interests?
+
+### 2. Significance
+
+Is the development meaningful enough to deserve attention?
+
+### 3. Freshness
+
+Is this genuinely current information rather than an old or repetitive development?
+
+### 4. Information quality
+
+Does the available source provide enough substance to support a useful post?
+
+### 5. Source credibility
+
+Is the information coming from a sufficiently credible source?
+
+### 6. Audience value
+
+Would the persona's intended audience learn something useful?
+
+### 7. Editorial fit
+
+Does the topic align with the persona's established editorial principles?
+
+### 8. Hype / low-information detection
+
+Reject topics that are primarily:
+
+* promotional fluff
+* vague announcements
+* unsupported claims
+* clickbait
+* repetitive low-value coverage
+* unrelated content
+* generic AI hype without substantive information
+
+Do not turn this into a giant hard-coded rule list.
+
+The criteria should be understandable and maintainable.
+
+---
+
+# 5. Explicit rejection is REQUIRED
+
+The system must intentionally reject unsuitable topics.
+
+Do not design the system so that every discovered topic becomes accepted.
+
+For example:
+
+```text
+Topic A → ACCEPT
+Topic B → REJECT
+Topic C → REJECT
+Topic D → ACCEPT
+```
+
+The rejection must have an explicit reason.
+
+Examples:
+
+```text
+REJECT
+Reason: The topic is outside the persona's AI security focus.
+
+REJECT
+Reason: The source contains insufficient technical information to support a useful post.
+
+REJECT
+Reason: The item is primarily promotional and does not provide meaningful new information.
+
+ACCEPT
+Reason: The development directly affects AI security practitioners and contains substantive technical information.
+```
+
+Do not fabricate reasons unrelated to the actual evaluation.
+
+---
+
+# 6. Scoring
+
+If a scoring system is used, make it interpretable.
+
+For example:
+
+```text
+Persona Fit       0–10
+Significance      0–10
+Freshness         0–10
+Source Quality    0–10
+Audience Value    0–10
+```
+
+Then derive an overall score.
+
+Do not make the score appear scientifically precise if it is simply a heuristic.
+
+Document the scoring methodology.
+
+Use clear thresholds.
+
+For example:
+
+```text
+score >= threshold → ACCEPT
+score < threshold  → REJECT
+```
+
+The exact threshold should be justified in the implementation.
+
+Avoid arbitrary magic numbers scattered throughout the code.
+
+---
+
+# 7. LLM usage
+
+An LLM may be used for editorial judgment if it genuinely improves the quality of the decision.
+
+However:
+
+* Do not blindly call an LLM for every operation.
+* Do not hard-code API keys.
+* Use environment variables.
+* Isolate the LLM behind a provider/service abstraction.
+* Make the decision layer testable without external API calls.
+* Mock the LLM in deterministic tests.
+* Do not make the test suite dependent on network availability.
+* Do not expose provider-specific implementation throughout the application.
+
+If an LLM is not necessary for a particular part of the evaluation, prefer deterministic logic.
+
+The architecture should allow an LLM provider to be replaced later.
+
+---
+
+# 8. Structured editorial prompt
+
+If an LLM is used, do not ask it for unstructured prose such as:
+
+> "Should I publish this?"
+```
+
+Instead provide structured inputs:
+
+```text
+Persona
+Topic
+Source
+Publication date
+Current time
+Editorial principles
+Audience
+```
+
+Require structured output conceptually equivalent to:
+
+```json
+{
+  "decision": "ACCEPT",
+  "score": 8.4,
+  "reasons": [
+    "Strong fit with the persona's domain",
+    "Timely development",
+    "Useful technical implications"
+  ]
+}
+```
+
+The actual implementation should use the project's existing technology and validation approach.
+
+Validate the LLM output.
+
+Never blindly trust malformed model output.
+
+If the LLM fails or returns invalid output, fail safely rather than automatically publishing the topic.
+
+---
+
+# 9. Persona integration
+
+The Editorial Judge must consume the actual initialized persona profile.
+
+Do NOT hard-code:
+
+```text
+AI Security Researcher
+```
+
+or any other specific identity.
+
+For example:
+
+```text
+Persona:
+Name: Ada
+Domain: AI Security
+Interests:
+- model vulnerabilities
+- agent security
+- privacy
+```
+
+should result in different editorial decisions than:
+
+```text
+Persona:
+Name: Atlas
+Domain: Robotics Engineering
+Interests:
+- autonomous navigation
+- robot perception
+- industrial robotics
+```
+
+The same topic can therefore be:
+
+```text
+ACCEPT
+```
+
+for one persona and:
+
+```text
+REJECT
+```
+
+for another.
+
+This demonstrates that editorial judgment is actually persona-aware.
+
+---
+
+# 10. Decision explanation
+
+Every editorial decision must be explainable.
+
+The decision object should contain concise reasons.
+
+For accepted topics, explain:
+
+* why it fits
+* why it matters
+* why it is timely
+
+For rejected topics, explain:
+
+* what criterion failed
+* why it does not meet the persona's standards
+
+The explanations will later help generate the hackathon-required publishing rationale.
+
+Do not generate generic explanations such as:
+
+> "This is a good topic."
+
+Make reasons specific to the topic and persona.
+
+---
+
+# 11. Separate editorial decision from content generation
+
+Do NOT generate the final social-media post in this milestone.
+
+The Editorial Judgment Engine should produce something conceptually like:
+
+```text
+Topic Candidate
+      ↓
+Editorial Evaluation
+      ↓
+Decision
+      ↓
+Reasons
+      ↓
+Selected / Rejected
+```
+
+It should NOT produce:
+
+```text
+Final LinkedIn/X post
+```
+
+That belongs to a later Content Generation milestone.
+
+---
+
+# 12. Batch evaluation
+
+Design the service so that multiple discovered topics can be evaluated in one discovery cycle.
+
+Conceptually:
+
+```text
+discover_topics()
+       ↓
+[topic1, topic2, topic3, topic4]
+       ↓
+evaluate_topics()
+       ↓
+[
+  ACCEPT,
+  REJECT,
+  REJECT,
+  ACCEPT
+]
+```
+
+Do not unnecessarily expose a public API endpoint for this.
+
+Keep the evaluation functionality as an internal application service.
+
+---
+
+# 13. Ordering and selection
+
+If multiple topics are accepted, preserve enough information to later prioritize them.
+
+A useful structure may include:
+
+```text
+editorialScore
+evaluatedAt
+```
+
+The service may return accepted topics ordered by editorial score or another clearly documented criterion.
+
+Do not implement publishing limits or scheduling yet.
+
+Do not decide when the agent should publish.
+
+That belongs to the autonomous publishing milestone.
+
+---
+
+# 14. Error handling
+
+Handle failures safely.
+
+Examples:
+
+* malformed topic
+* missing source
+* missing title
+* invalid timestamp
+* LLM timeout
+* LLM invalid response
+* persona unavailable
+* source metadata unavailable
+
+A failed evaluation must NOT silently become:
+
+```text
+ACCEPT
+```
+
+When evaluation cannot reliably determine whether a topic meets publishing standards, prefer a safe rejection or an explicit evaluation failure state, depending on the architecture.
+
+Do not publish uncertain content.
+
+---
+
+# 15. Tests
+
+Create strong deterministic tests.
+
+The standard test suite must NOT require an external LLM or live internet.
+
+At minimum test:
+
+### Persona relevance
+
+1. Highly relevant topic → accepted.
+2. Clearly unrelated topic → rejected.
+
+### Significance
+
+3. High-value technical development → accepted.
+4. Low-information content → rejected.
+
+### Source quality
+
+5. Credible source → positive evaluation.
+6. Weak/unreliable source → rejection or appropriately reduced score.
+
+### Freshness
+
+7. Recent topic → positive evaluation.
+8. Clearly stale topic → rejected or appropriately penalized.
+
+### Editorial standards
+
+9. Promotional fluff → rejected.
+10. Clickbait/unsupported claim → rejected.
+11. Topic violating persona editorial principles → rejected.
+
+### Explanation
+
+12. Accepted topic has meaningful reasons.
+13. Rejected topic has meaningful rejection reasons.
+
+### Persona differences
+
+14. Same topic evaluated for two different personas produces appropriately different results.
+
+### LLM integration
+
+If an LLM provider is implemented:
+
+15. Mock successful structured response.
+16. Mock malformed response.
+17. Mock timeout/error.
+18. Verify failure does not result in automatic acceptance.
+
+### Regression
+
+19. All Milestone 1–4 tests continue to pass.
+
+Do not reduce or delete previous tests to make the suite pass.
+
+---
+
+# 16. Testing editorial quality
+
+Create a small deterministic fixture dataset representing different types of topics.
+
+For example:
+
+```text
+Highly relevant technical breakthrough
+Unrelated celebrity news
+Generic AI marketing announcement
+Important security vulnerability
+Old/recycled announcement
+Research paper with meaningful implications
+Clickbait article
+Low-information product promotion
+```
+
+Use these fixtures to demonstrate that the Editorial Judge actually distinguishes between strong and weak candidates.
+
+Do not use fabricated real-world claims.
+
+The fixture descriptions can be synthetic test inputs.
+
+---
+
+# 17. Documentation
+
+Update `README.md`.
+
+Add a section explaining:
+
+### Editorial Judgment
+
+Explain:
+
+* why discovery and judgment are separate
+* evaluation criteria
+* scoring if implemented
+* acceptance/rejection behavior
+* explanation generation
+* LLM usage if applicable
+* failure behavior
+
+Show the architecture:
+
+```text
+Live Sources
+     ↓
+Topic Discovery
+     ↓
+Topic Candidates
+     ↓
+Persona
+     ↓
+Editorial Judgment
+     ↓
+ACCEPT / REJECT
+```
+
+Explicitly state that:
+
+* final post generation is not implemented yet
+* autonomous scheduling is not implemented yet
+* autonomous publishing is not implemented yet
+* long-term publishing memory is not implemented yet
+
+Do not document future functionality as completed.
+
+---
+
+# 18. AI Usage Log — REQUIRED
+
+Update:
+
+`docs/AI_USAGE_LOG.md`
+
+Add a chronological **Milestone 5 — Editorial Judgment** entry.
+
+The entry MUST contain:
+
+... [rest of standard entry template] ...
+
+Do NOT fabricate results.
+
+The AI Usage Log must remain an authentic development record.
+
+---
+
+# 19. Update the milestone overview
+
+If the AI Usage Log contains a milestone overview table, update it to include:
+
+```text
+Milestone 5 | Editorial Judgment
+```
+
+Use the actual commit information after committing.
+
+---
+
+# 20. Breeth / Memory boundary
+
+Do NOT implement long-term publishing memory in this milestone.
+
+Breeth may already exist as an abstraction or development dependency.
+
+Inspect it before making changes.
+
+Do not fake Breeth calls.
+
+Do not store fabricated memories.
+
+Do not implement semantic memory or repetition detection here.
+
+The future Memory milestone will handle:
+
+* previously published topics
+* previous posts
+* semantic repetition
+* continuity
+* persistent agent memory
+
+For now, Editorial Judgment should operate on the current topic candidates and persona.
+
+---
+
+# 21. Project structure review
+
+After implementation, inspect the complete repository.
+
+Check for:
+
+* duplicate services
+* duplicate models
+* business logic inside routes
+* oversized files
+* circular imports
+* unnecessary dependencies
+* unused imports
+* dead code
+* inconsistent naming
+* hard-coded thresholds
+* hard-coded persona assumptions
+* leaked LLM provider details
+* secrets
+* temporary files
+* poor separation of concerns
+
+Keep the architecture clean.
+
+Do not perform unrelated refactoring.
+
+---
+
+# 22. Full verification
+
+Before committing:
+
+1. Run formatting/linting if configured.
+2. Run the complete deterministic test suite.
+3. Confirm all Milestone 1–4 tests pass.
+4. Run the editorial fixture tests.
+5. If an LLM provider exists, run mocked provider tests.
+6. Verify accepted topics have meaningful reasons.
+7. Verify rejected topics have meaningful reasons.
+8. Verify different personas can produce different editorial decisions.
+9. Verify failures do not silently become ACCEPT.
+10. Verify no external API dependency is required for normal tests.
+11. Start the application.
+12. Verify `/health`.
+13. Verify existing `/api/agent/init`.
+14. Verify existing `/api/agent/feed`.
+15. Confirm the evaluator-facing API contract has not been broken.
+16. Inspect the complete Git diff.
+17. Check for secrets before staging.
+18. Review `docs/AI_USAGE_LOG.md`.
+
+Do not add a public editorial-debugging endpoint unless there is a strong architectural reason.
+
+---
+
+# 23. Git discipline
+
+This milestone must have its own Git commit.
+
+Do NOT amend previous commits.
+
+Do NOT squash commits.
+
+Do NOT force-push.
+
+Before committing:
+
+```text
+git status
+git diff
+```
+
+Stage ONLY Milestone 5 changes.
+
+Use this commit message:
+
+```text
+feat: add persona-aware editorial judgment
+```
+
+After committing:
+
+```text
+git show --stat --oneline HEAD
+git status
+```
+
+Verify:
+
+* previous milestone commits remain intact
+* only intended files were committed
+* no secrets were committed
+* working tree is clean
+
+Then push to the configured remote.
+
+Verify the local branch is synchronized with the remote.
+
+If push authentication or permissions fail, do not perform destructive Git operations. Report the exact error.
+
+---
+
+# 24. Final report
+
+After implementation and successful push, report:
+
+... [rest of summary spec] ...
+
+Do not implement Memory in this milestone.
+
+---
+
+# Final principle
+
+This milestone should make the project visibly demonstrate:
+
+```text
+DISCOVER MANY
+      ↓
+JUDGE EACH
+      ↓
+REJECT SOME
+      ↓
+SELECT THE BEST
+```
+
+Keep the implementation focused, explainable, testable, and genuinely persona-aware.
+```
+
+### What This Prompt Does
+
+This prompt instructs the coding assistant to build a reusable **Editorial Judgment Service** that evaluates candidate topics against the agent's stable persona profile (matching interests, avoided topics, freshness recency, and source credibility), implementing strict ACCEPT and REJECT decision states with clear explanations, building a dual-engine adapter layout (supporting local deterministic rules and mocked LLM calls), and writing comprehensive unit and integration tests to verify all behaviors.
+
+### Implementation Summary
+
+1. **Configuration**:
+   - Added settings for `editorial_engine_type` and `editorial_threshold` in settings, documented in `.env.example`.
+2. **Schema Definition**:
+   - Created `app/schemas/editorial.py` defining the `EditorialDecision` model.
+3. **Logic and Service Layer**:
+   - Developed `app/services/llm.py` featuring `BaseLLMClient` and `MockLLMClient`.
+   - Developed `app/services/editorial.py` implementing `EditorialJudgmentService`. It processes candidate metrics, implements batch evaluations with error isolation, ranks/prioritizes results, and applies heuristic checks on interest matching, stale deadlines, and avoided politics terms.
+4. **Export Configuration**:
+   - Exposes schemas and services in package `__init__.py` files.
+
+### Important Technical Decisions
+
+- **Minimum Quality Gates**: Topics must meet a minimum relevance score of 5.0 (at least one interest match) and freshness score of 5.0 (published within 7 days) to be accepted, preventing irrelevant or stale posts.
+- **Explainable Reasons**: Detailed context-specific accept/reject explanations generated during deterministic runs (e.g. matching interest names, stale counters, clickbait alerts, or avoided classifications).
+- **Error Resilient Batches**: Iterates batch evaluations in isolated try-except blocks, falling back to a safe `REJECT` decision if a candidate is malformed or an LLM call times out.
+
+### Testing & Verification
+
+- Created `tests/test_editorial.py` verifying:
+  - Acceptance of highly relevant topics, rejection of chef/celebrity announcements.
+  - Significance checks (breakthroughs vs. webinars).
+  - Source quality differences (NVIDIA/AWS vs. unknown).
+  - Freshness penalties and stale content rejection.
+  - Avoided politics matching (expanded stems) and clickbait filters.
+  - Persona-aware outputs (accepting security topic for security, rejecting for robotics).
+  - Mocked LLM success, malformed, and timeout errors (safe rejects).
+  - Batch evaluation and prioritized score ordering.
+- Verified all 33 tests pass successfully.
+- Triggered controlled live evaluation run using `scratch/verify_editorial.py` confirming expected outputs across all tech dataset fixtures.
+
+### Outcome
+
+Milestone 5 Editorial Judgment Engine successfully implemented, tested, and verified.
+
+### Deviations
+
+None.
+
+### Git Commit
+
+*Pending*
+
+`feat: add persona-aware editorial judgment`
+

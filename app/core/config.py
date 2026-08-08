@@ -41,8 +41,9 @@ class Settings(BaseSettings):
             return [item.strip() for item in v.split(",") if item.strip()]
         return v
 
-    # Future integration keys (placeholders in configuration)
-    # breeth_mcp_url: str | None = Field(default=None, validation_alias="BREETH_MCP_URL")
+    # Editorial Judgment Settings
+    editorial_engine_type: str = Field(default="deterministic", validation_alias="EDITORIAL_ENGINE_TYPE")
+    editorial_threshold: float = Field(default=6.0, validation_alias="EDITORIAL_THRESHOLD")
 
     model_config = SettingsConfigDict(
         env_file=".env",
