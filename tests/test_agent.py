@@ -1,4 +1,6 @@
 import pytest
+from app.repositories.agent import agent_repository
+from app.services.persona import PersonaService
 
 def test_agent_init_success(client):
     """
@@ -124,3 +126,104 @@ def test_agent_init_unique_ids(client):
     id_bob = res_bob.json()["agentId"]
     
     assert id_ada != id_bob
+
+
+def test_persona_profile_creation_and_stability(client):
+    """
+    Test 8: Verify a detailed persona profile is created with all expected fields upon initialization
+    and remains stable across multiple requests.
+    """
+    payload = {
+        "persona": {
+            "name": "Ada",
+            "domain": "AI Security"
+        }
+    }
+    response = client.post("/api/agent/init", json=payload)
+    assert response.status_code == 200
+    agent_id = response.json()["agentId"]
+
+    # Retrieve profile from the repository
+    profile_dict = agent_repository.get_agent_persona(agent_id)
+    assert profile_dict is not None
+
+    # Check required fields
+    for field in ["name", "domain", "identity", "mission", "core_interests", "editorial_principles", "writing_style", "audience", "topics_to_avoid"]:
+        assert field in profile_dict
+        assert profile_dict[field] is not None
+
+    # Check name and domain preservation
+    assert profile_dict["name"] == "Ada"
+    assert profile_dict["domain"] == "AI Security"
+
+    # Check stability (identity remains unchanged)
+    assert "AI Security researcher" in profile_dict["identity"]
+    
+    # Retrieve again and ensure identical state (stability)
+    profile_dict_second = agent_repository.get_agent_persona(agent_id)
+    assert profile_dict == profile_dict_second
+
+
+def test_persona_profile_differentiation(client):
+    """
+    Test 9: Verify that different tech domains produce appropriately different profiles.
+    """
+    res_sec = client.post("/api/agent/init", json={
+        "persona": {"name": "Alice", "domain": "AI Security"}
+    })
+    res_ml = client.post("/api/agent/init", json={
+        "persona": {"name": "Bob", "domain": "Machine Learning"}
+    })
+
+    id_sec = res_sec.json()["agentId"]
+    id_ml = res_ml.json()["agentId"]
+
+    profile_sec = agent_repository.get_agent_persona(id_sec)
+    profile_ml = agent_repository.get_agent_persona(id_ml)
+
+    # Core interests and identities should differ significantly
+    assert profile_sec["identity"] != profile_ml["identity"]
+    assert profile_sec["mission"] != profile_ml["mission"]
+    assert "AI security" in profile_sec["core_interests"]
+    assert "MLOps" in profile_ml["core_interests"]
+
+
+def test_persona_profile_dynamic_fallback(client):
+    """
+    Test 10: Verify that arbitrary technology domains dynamically generate valid profiles.
+    """
+    domain = "Quantum Computing"
+    res = client.post("/api/agent/init", json={
+        "persona": {"name": "Quinn", "domain": domain}
+    })
+    agent_id = res.json()["agentId"]
+    profile = agent_repository.get_agent_persona(agent_id)
+
+    assert profile["name"] == "Quinn"
+    assert profile["domain"] == domain
+    assert "Quantum Computing" in profile["identity"]
+    assert "Quantum Computing" in profile["mission"]
+    assert any("Quantum Computing" in interest or "quantum computing" in interest for interest in profile["core_interests"])
+    assert len(profile["editorial_principles"]) > 0
+    assert len(profile["writing_style"]) > 0
+
+
+def test_persona_service_direct():
+    """
+    Test 11: Unit test the PersonaService directly to verify profile generation details.
+    """
+    service = PersonaService()
+    
+    # Predefined domain
+    profile_dev = service.generate_profile("Dave", "Developer Advocate")
+    assert profile_dev.name == "Dave"
+    assert profile_dev.domain == "Developer Advocate"
+    assert "Developer Advocate" in profile_dev.identity
+    assert "developer experience (DX)" in profile_dev.core_interests
+    
+    # Custom/arbitrary domain
+    profile_custom = service.generate_profile("Eve", "WebAssembly")
+    assert profile_custom.name == "Eve"
+    assert profile_custom.domain == "WebAssembly"
+    assert "WebAssembly" in profile_custom.identity
+    assert any("WebAssembly" in interest for interest in profile_custom.core_interests)

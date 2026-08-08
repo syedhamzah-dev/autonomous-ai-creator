@@ -37,10 +37,51 @@ Feed API (Exposes GET /api/agent/feed for evaluators)
 
 ### Milestone Progress
 * **Milestone 1**: Established the base FastAPI structure, settings validation, and base memory interface contracts.
-* **Milestone 2**: Implemented the core hackathon API contract. This includes:
-  - Agent initialization schema validations.
-  - An in-memory repository layer for temporary agent state tracking.
-  - Slim API handlers implementing `POST /api/agent/init` and `GET /api/agent/feed`.
+* **Milestone 2**: Implemented the core hackathon API contract (agent initialization, in-memory repository, slim FastAPI routers).
+* **Milestone 3**: Implemented the **Persona Engine** to construct stable, coherent technology/AI identities from a name and domain, ensuring identity consistency.
+
+---
+
+## Persona Engine
+
+The **Persona Engine** is a core reusable subsystem introduced in Milestone 3. It transforms the basic configuration provided during agent initialization (`name` and `domain`) into a stable, rich, technology-focused persona profile.
+
+### Why Persona Consistency Matters
+An AI content creator needs a stable voice and defined boundary of interest. If the persona changes between API calls or regenerates randomly, the agent's identity breaks, resulting in disjointed editorial judgment and inconsistent post generation. 
+
+By generating the profile *exactly once* during agent initialization and persisting it in the repository, the engine guarantees that subsequent reads (e.g. status requests or feed queries) interact with the exact same stable persona.
+
+### Persona Profile Structure
+The profile is represented by the [PersonaProfile](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/schemas/persona.py) Pydantic model and includes:
+* **Identity**: A short description of the AI identity (e.g., AI Security researcher, ML engineer).
+* **Mission**: A concise explanation of what the persona analyzes or explains.
+* **Core Interests**: A list of specific technology sub-fields (e.g., MLOps, model vulnerabilities).
+* **Editorial Principles**: Stable rules governing what is worth discussing (e.g., prefer evidence over hype, explain practical implications).
+* **Writing Style**: Tone and stylistic markers (e.g., concise, clear, technically grounded).
+* **Audience**: Target readership.
+* **Topics to Avoid**: Categories to filter out (e.g., political content unrelated to AI/tech, unsupported rumors).
+
+### Information Flow
+```text
+  [POST /api/agent/init]
+           │
+           ▼
+    [AgentService] ────(initializes)────► [PersonaService]
+           │                                      │
+           │                                 (generates)
+           │                                      ▼
+           │                             [PersonaProfile]
+           │                                      │
+           ▼                                      │
+    [InMemoryAgentRepository] ◄──(persists dict)──┘
+```
+
+When an agent is initialized:
+1. The client sends the name and domain via `POST /api/agent/init`.
+2. `AgentService` validates inputs and delegates generation to `PersonaService`.
+3. `PersonaService` deterministically generates a custom `PersonaProfile` (either from rich predefined technology templates or via a dynamic fallback generator for custom domains).
+4. The generated profile is persisted inside the `InMemoryAgentRepository` under the agent's unique UUID.
+5. All future modules (such as the future Editorial Judge and Writer) query the repository to consume the stable, structured profile rules.
 
 ---
 
@@ -210,7 +251,8 @@ The following features are **NOT** implemented yet:
 
 - [x] **Milestone 1**: Project foundation, configuration management, memory abstraction interface, and health verification.
 - [x] **Milestone 2**: API Contract & Agent Initialization State (In-Memory).
-- [ ] **Milestone 3**: Memory integration via the **Breeth** persistent memory layer.
-- [ ] **Milestone 4**: LLM-powered editorial scoring and persona-based article generation.
-- [ ] **Milestone 5**: Topic discovery, RSS scraping, and news sources integration.
-- [ ] **Milestone 6**: Scheduler for autonomous loop execution, full 48-hour loop operation.
+- [x] **Milestone 3**: Persona Engine implementation for stable AI technology identities.
+- [ ] **Milestone 4**: Memory integration via the **Breeth** persistent memory layer.
+- [ ] **Milestone 5**: Live topic discovery, RSS scraping, and news sources integration.
+- [ ] **Milestone 6**: LLM-powered editorial scoring and persona-based article generation (Editorial Judge & Writer).
+- [ ] **Milestone 7**: Scheduler for autonomous loop execution, full 48-hour loop operation.

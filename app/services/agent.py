@@ -2,14 +2,20 @@ import uuid
 from typing import Any, Dict, List
 from app.repositories.agent import BaseAgentRepository, agent_repository
 from app.schemas.agent import Persona
+from app.services.persona import PersonaService
 
 class AgentService:
     """
     Coordinates agent initialization and feed retrieval business logic.
     """
 
-    def __init__(self, repository: BaseAgentRepository = agent_repository) -> None:
+    def __init__(
+        self,
+        repository: BaseAgentRepository = agent_repository,
+        persona_service: PersonaService = None
+    ) -> None:
         self.repository = repository
+        self.persona_service = persona_service or PersonaService()
 
     def initialize_agent(self, persona: Persona) -> str:
         """
@@ -22,8 +28,10 @@ class AgentService:
             The generated agentId.
         """
         agent_id = str(uuid.uuid4())
-        # Store serialized persona dict
-        self.repository.save_agent(agent_id, persona.model_dump())
+        # Generate complete, stable technology persona profile
+        profile = self.persona_service.generate_profile(persona.name, persona.domain)
+        # Store serialized persona profile dict
+        self.repository.save_agent(agent_id, profile.model_dump())
         return agent_id
 
     def get_agent_feed(self, agent_id: str) -> List[Dict[str, Any]]:
