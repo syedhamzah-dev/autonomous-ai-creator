@@ -62,7 +62,7 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M5** | Editorial Judgment | Persona-aware topic selection and scoring | `ef6d57cad3e21870a20da42efa44513b8da0d6de`<br>`feat: add persona-aware editorial judgment` |
 | **M6** | Persistent Agent Memory | Local persistent agent-scoped memory & repetition checks | `c20c589a803890afdbb4741ceddd54e91722bec7`<br>`feat: add persistent agent memory` |
 | **M7** | Content Generation | Persona-consistent post text grounded in sources | `bdb265a657579875c1e27216423394c18deb45a7`<br>`feat: add autonomous content generation` |
-| **M8** | Scheduling Loop | Periodic autonomous cycle execution, states, locks, failure resilience | *Pending* |
+| **M8** | Scheduling Loop | Periodic autonomous cycle execution, states, locks, failure resilience | `9b6825f30322219804d38dafca4eaf810894f278`<br>`feat: add autonomous execution loop` |
 
 ---
 
@@ -3998,7 +3998,7 @@ Milestone 8 background autonomous scheduler loop fully implemented, tested, and 
 
 ### Git
 
-*Pending*
+`9b6825f30322219804d38dafca4eaf810894f278`
 
 `feat: add autonomous execution loop`
 
