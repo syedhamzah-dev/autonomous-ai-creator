@@ -1,45 +1,77 @@
 # AI Usage Log
 
-## Purpose
+> **Autonomous AI Creator · Hackathon Development Record**
 
-This document records the AI-assisted development process used to build the Autonomous AI Creator hackathon project.
+This document records the AI-assisted development process used to build the Autonomous AI Creator.
 
-Each milestone records the coding-agent prompt, what the prompt was intended to accomplish, the resulting implementation, technical decisions, verification, deviations, and Git history.
+The project was developed incrementally through independently scoped milestones. Each milestone introduced a specific capability, was verified independently, documented, and committed to Git.
 
-The log is maintained as an authenticity and engineering-process record.
-
-## Development Approach
-
-The project was developed incrementally through independently scoped milestones.
-
-Each milestone was:
-- implemented separately
-- tested
-- documented
-- committed independently
-- pushed to the repository
-
-## Milestone Overview
-
-| Milestone | Capability | Commit Hash | Commit Message |
-| :--- | :--- | :--- | :--- |
-| **1** | Foundation & Memory Abstraction | `f6540e977f92edf0d4212103bd925b9e66bc5863` | `chore: initialize autonomous creator project` |
-| **2** | Agent Initialization & Feed API | `5b192df82eb6b579128899bede221f518397c74d` | `feat: implement agent initialization and feed API` |
-| **3** | Stable AI Persona Engine | `e7622f7cf45e3f634017b03258ede6e7284cf9d2` | `feat: add stable AI persona engine` |
-| **4** | Live AI Topic Discovery | `845046010a96f177df3eb408bb8f67f441ee22d2` | `feat: add live AI topic discovery` |
-| **5** | Editorial Judgment Engine | `ef6d57cad3e21870a20da42efa44513b8da0d6de` | `feat: add persona-aware editorial judgment` |
+This document serves two purposes:
+1. **Engineering record** — showing how the system evolved.
+2. **Authenticity record** — preserving the relationship between coding-agent prompts, implementation decisions, verification, and Git history.
 
 ---
 
-## Milestone 1 — Foundation
+## Development Philosophy
 
-### Date
+The Autonomous AI Creator was intentionally built as a sequence of small, testable capabilities rather than as a single generated codebase.
 
-2026-08-08
+```text
+  M1: Foundation & Memory Abstraction
+                  │
+                  ▼
+  M2: Agent Initialization & Feed API
+                  │
+                  ▼
+      M3: Stable Persona Engine
+                  │
+                  ▼
+     M4: Live AI Topic Discovery
+                  │
+                  ▼
+      M5: Editorial Judgment Engine
+                  │
+                  ▼
+       M6: Memory integration (Planned)
+                  │
+                  ▼
+      M7: Content Generation (Planned)
+                  │
+                  ▼
+     M8: Autonomous Publishing (Planned)
+```
+
+Each milestone has its own scope, verification, documentation, and Git history. Planned milestones will connect editorial judgment with persistent memory, content generation, and autonomous scheduling.
+
+---
+
+## Milestone Overview
+
+| Milestone | Capability | Primary Outcome | Git Commit Hash & Message |
+| :--- | :--- | :--- | :--- |
+| **M1** | Foundation | Project architecture and development foundation | `f6540e977f92edf0d4212103bd925b9e66bc5863`<br>`chore: initialize autonomous creator project` |
+| **M2** | Agent API | Initialization and feed contract endpoints | `5b192df82eb6b579128899bede221f518397c74d`<br>`feat: implement agent initialization and feed API` |
+| **M3** | Persona | Stable AI identity and editorial profile generation | `e7622f7cf45e3f634017b03258ede6e7284cf9d2`<br>`feat: add stable AI persona engine` |
+| **M4** | Discovery | Live AI/technology topic discovery | `845046010a96f177df3eb408bb8f67f441ee22d2`<br>`feat: add live AI topic discovery` |
+| **M5** | Editorial Judgment | Persona-aware topic selection and scoring | `ef6d57cad3e21870a20da42efa44513b8da0d6de`<br>`feat: add persona-aware editorial judgment` |
+
+---
+
+## M1 · Foundation
+
+**Status:** Complete  
+**Focus:** Project foundation and architecture  
+**Commit:** `f6540e977f92edf0d4212103bd925b9e66bc5863` · `chore: initialize autonomous creator project`  
+**Date:** 2026-08-08  
 
 ### Objective
 
 Establish the initial project foundation, FastAPI service layout, environment settings validation, memory abstraction interface, and health check validation.
+
+### Scope Boundaries
+
+> **Implemented:** Base FastAPI app layout, settings validation via `pydantic-settings`, healthcheck API (`GET /health`), abstract memory interface contracts.  
+> **Deferred:** Agent state management, live topic discovery, editorial judgment, content writing, scheduling, publishing.
 
 ### Coding-Agent Prompt
 
@@ -50,6 +82,9 @@ Establish the initial project foundation, FastAPI service layout, environment se
 Based on the implementation and Git history, this milestone focused on establishing the base FastAPI project structure, setting up environmental settings management with Pydantic, exposing a GET `/health` endpoint, defining the abstract `BaseMemory` interface, and verifying functionality using automated tests.
 
 *Note: The subsequent prompt received for reviewing and committing Milestone 1 was:*
+
+<details>
+<summary><strong>View review prompt</strong></summary>
 
 ```text
 Before we continue to the next milestone, perform a final review of the work completed in Milestone 1.
@@ -108,36 +143,33 @@ After committing, report:
 7. Current Git status
 ```
 
+</details>
+
 ### What This Prompt Does
 
 This prompt instructs the coding assistant to finalize Milestone 1 by checking repository structure cleanliness, ensuring dependencies and configurations are secure, testing FastAPI health endpoints, verifying the memory abstraction (`BaseMemory`), creating `docs/AI_USAGE_LOG.md`, and initiating the Git commit workflow. It imposes thin route layout constraints and explicitly defers state management, agents, LLMs, and publishing.
 
-### Implementation Summary
+### Architecture Snapshot
 
-1. **Environment Initialization**:
-   - Created a local Python virtual environment (`.venv`) using Python 3.14.6.
-   - Set up `.gitignore` to prevent tracking of build artifacts, caches, and `.env` credentials.
-   - Pinned project dependencies in `requirements.txt`.
-   - Setup template environment settings in `.env.example`.
-2. **Core API Implementation**:
-   - Constructed modular FastAPI directory structures under `app/`.
-   - Loaded and validated environments settings via `pydantic-settings` in `app/core/config.py`.
-   - Exposed a service health endpoint `GET /health` inside `app/api/endpoints/health.py`.
-   - Linked subrouters and initialized FastAPI application in `app/main.py` and `app/api/router.py`.
-3. **Memory Abstraction Design**:
-   - Set up the abstract memory interface `BaseMemory` in `app/services/memory.py` outlining method contracts (`store_post`, `retrieve_posts`, `search_memories`, `is_repetitive`).
-   - Created `BreethMemoryPlaceholder` throwing `NotImplementedError` to keep contracts clear.
+```mermaid
+flowchart TD
+    A[FastAPI App Initialization] --> B[config.py Environment Settings]
+    A --> C[health.py healthcheck]
+    A --> D[memory.py base abstraction BaseMemory]
+```
 
-### Important Technical Decisions
+### Implementation
 
-- **Decoupled Architecture**: Decoupled memory storage contracts from the implementation so that the Breeth memory layer can be swapped in without modifying any service logic.
-- **Fail-Fast Configuration**: Utilized Pydantic Settings validation on startup so that invalid configuration crashes the service immediately rather than failing silently later.
+* **Environment Initialization**: Configured `.gitignore` for virtual environment (`.venv`), python caches, and `.env` files. Defined required packages inside `requirements.txt` and template settings in `.env.example`.
+* **API Layout**: Configured central FastAPI application entry point `app/main.py`, sub-routing controller `app/api/router.py`, and health router `app/api/endpoints/health.py`.
+* **Settings Management**: Implemented `Settings` class in `app/core/config.py` loading configurations securely using `pydantic-settings`.
+* **Memory Abstraction**: Created `BaseMemory` abstract base class and `BreethMemoryPlaceholder` throwing `NotImplementedError` inside `app/services/memory.py` to draft persistent memory integration contracts.
 
-### Testing & Verification
+### Verification
 
-- Created `tests/conftest.py` with pytest fixtures supplying module-scoped `TestClient`.
-- Wrote unit tests in `tests/test_health.py` validating that the health router returns HTTP 200 and correctly identifies environment metadata.
-- Executed `pytest` and confirmed tests passed.
+* **Deterministic Unit Tests**: Created `tests/conftest.py` supplying `TestClient` pytest fixtures, and wrote `tests/test_health.py` validating health checks return HTTP 200 with matching environment metadata. All tests passed.
+* **Regression Suite**: N/A (Milestone 1).
+* **Manual Verification**: Development server starts up cleanly and answers queries on port 8000.
 
 ### Outcome
 
@@ -147,25 +179,28 @@ Milestone 1 foundation established, verified, and documented.
 
 None.
 
-### Git Commit
-
-`f6540e977f92edf0d4212103bd925b9e66bc5863`
-
-`chore: initialize autonomous creator project`
-
 ---
 
-## Milestone 2 — Agent Initialization & Feed API
+## M2 · Agent Initialization & Feed API
 
-### Date
-
-2026-08-08
+**Status:** Complete  
+**Focus:** API contract and in-memory agent initialization  
+**Commit:** `5b192df82eb6b579128899bede221f518397c74d` · `feat: implement agent initialization and feed API`  
+**Date:** 2026-08-08  
 
 ### Objective
 
 Implement the hackathon API contract endpoints (`POST /api/agent/init` and `GET /api/agent/feed?agentId=<id>`), validate inputs, and store basic agent initialization state.
 
+### Scope Boundaries
+
+> **Implemented:** Agent initialization schemas, input parameter validation, agent repository memory interface, unique agent ID generation, feed retrieve handler (returns empty list).  
+> **Deferred:** Stable persona profile generation, live topic discovery, editorial judgment scoring, memory checks, publishing scheduler.
+
 ### Coding-Agent Prompt
+
+<details>
+<summary><strong>View full coding-agent prompt</strong></summary>
 
 ```text
 We are beginning **Milestone 2** of the Autonomous AI Creator hackathon project.
@@ -599,65 +634,66 @@ Give a short recommendation for the next milestone, but DO NOT implement it.
 Do not make any additional changes after the final commit and push.
 ```
 
+</details>
+
 ### What This Prompt Does
 
 This prompt instructs the coding agent to build the hackathon API contract for agent initialization and feed retrieval. It requires checking constraints for empty or whitespace name/domain inputs, generating cryptographically secure IDs, and decoupling state logic. It explicitly defers discovery, LLM writing, editorial judgment, memory repetition checks, and scheduling.
 
-### Implementation Summary
+### Architecture Snapshot
 
-1. **API Schema Definition**:
-   - Created `app/schemas/agent.py` defining Pydantic models for inputs and outputs.
-   - Enforced non-empty persona constraints utilizing `pydantic.StringConstraints(strip_whitespace=True, min_length=1)`.
-   - Setup skeleton models for `PostModel` and `FeedResponse`.
-2. **Repository Layer**:
-   - Implemented abstract `BaseAgentRepository` and concrete `InMemoryAgentRepository` in `app/repositories/agent.py`.
-   - Set up a global singleton repository instance `agent_repository`.
-3. **Business Logic Layer**:
-   - Formed `AgentService` in `app/services/agent.py` to coordinate UUID creation and retrieval from repositories.
-4. **FastAPI Endpoints**:
-   - Added endpoint logic inside `app/api/endpoints/agent.py` and connected prefix routing in `app/api/router.py`.
+```mermaid
+flowchart TD
+    A[POST /api/agent/init] --> B[AgentService initialize_agent]
+    B --> C[UUID4 Generation & schema validation]
+    B --> D[InMemoryAgentRepository persistence]
+    E[GET /api/agent/feed] --> F[AgentService retrieve_feed]
+    F --> D
+```
 
-### Important Technical Decisions
+### Implementation
 
-- **Decoupled Repositories**: Followed the Repository pattern so that the local in-memory dictionaries can easily be swapped with databases or memory systems in future phases.
-- **Strict Validation**: Standardized whitespace trimming at validation time, preventing blank or space-filled name/domain values.
+* **API Schemas**: Created `app/schemas/agent.py` defining validation models. Enforced strict constraints on persona name and domain using `pydantic.StringConstraints(strip_whitespace=True, min_length=1)` to reject empty or whitespace inputs.
+* **Repository Layer**: Built `BaseAgentRepository` interface and concrete `InMemoryAgentRepository` implementation in `app/repositories/agent.py` acting as an ephemeral singleton store.
+* **Service Coordination**: Built `AgentService` in `app/services/agent.py` to decouple controller routes from business logic, generating unique UUID4 strings for agent IDs.
+* **API Handlers**: Developed route handlers in `app/api/endpoints/agent.py` exposing `/init` and `/feed`.
 
-### Testing & Verification
+### Verification
 
-- Created `tests/test_agent.py` verifying:
-  - Successful initialization and unique UUID outputs.
-  - Rejection of missing, empty, or whitespace-only inputs.
-  - Empty feed outputs for newly initialized agents.
-  - Return of HTTP 404 for unknown agent IDs.
-- Run `pytest` to verify all 8 tests pass successfully.
+* **Deterministic Unit Tests**: Created `tests/test_agent.py` checking successful initializations, validation errors for missing or empty persona inputs, HTTP 404 responses for unknown agent IDs, and UUID uniqueness.
+* **Regression Suite**: Pytest executes both health check and agent tests. Verified all 8 tests pass successfully.
+* **Manual Verification**: Tested edge case requests with curl against the local server, validating 422 validations and 404 feed rejections.
 
 ### Outcome
 
-Milestone 2 API contract fully implemented, tested, and verified.
+Milestone 2 API contract fully implemented, verified, and documented.
 
 ### Deviations
 
 None.
 
-### Git Commit
-
-`5b192df82eb6b579128899bede221f518397c74d`
-
-`feat: implement agent initialization and feed API`
-
 ---
 
-## Milestone 3 — Stable Persona Engine
+## M3 · Stable Persona Engine
 
-### Date
-
-2026-08-08
+**Status:** Complete  
+**Focus:** Reusable technology persona profile generation  
+**Commit:** `e7622f7cf45e3f634017b03258ede6e7284cf9d2` · `feat: add stable AI persona engine`  
+**Date:** 2026-08-08  
 
 ### Objective
 
 Implement the stable, reusable Persona Engine to construct consistent technology-focused AI profiles from the agent's name and domain.
 
+### Scope Boundaries
+
+> **Implemented:** PersonaProfile schema, PersonaService templates, fallback profile generator preserving casing, integration with AgentService to cache persona at initialization.  
+> **Deferred:** Live topic discovery, editorial judgment engine, persistent DB memory, scheduling loops.
+
 ### Coding-Agent Prompt
+
+<details>
+<summary><strong>View full coding-agent prompt</strong></summary>
 
 ```text
 We are beginning **Milestone 3** of the Autonomous AI Creator hackathon project.
@@ -1164,60 +1200,54 @@ The next major capability will likely be **live topic discovery**, but do not bu
 Remember: this project is being evaluated for incremental development, code quality, autonomous behavior, editorial judgment, persona consistency, memory, and transparency. Keep every milestone focused, testable, documented, and independently committed.
 ```
 
+</details>
+
 ### What This Prompt Does
 
 This prompt instructs the coding assistant to build a reusable, stable Persona Engine. It specifies the persona profile fields (identity, mission, interests, principles, style, audience, and avoided topics), requires that it be created exactly once upon agent initialization and stored in persistence to ensure 100% consistency across request invocations, decoupling routing from service logic, implementing deterministic profile generation to avoid unnecessary API dependencies, and verifying behavior with unit and integration tests. It explicitly defers discovery, editorial scoring, scheduling, and memory repetitions.
 
-### Implementation Summary
+### Implementation
 
-1. **Schema Design**:
-   - Created `app/schemas/persona.py` detailing the `PersonaProfile` model.
-2. **Business Logic Layer**:
-   - Wrote `PersonaService` in `app/services/persona.py` defining rich custom templates for standard technology domains and fallback generators for custom domains.
-3. **Integration**:
-   - Integrated `PersonaService` in `AgentService.initialize_agent` to generate and persist the profile at UUID initialization.
-   - Preserved API request and response signatures exactly.
+* **Schema Design**: Created `app/schemas/persona.py` containing the `PersonaProfile` model mapping identity, mission, interests, editorial principles, writing style, audience, and avoided topics.
+* **Persona Generation**: Developed `PersonaService` in `app/services/persona.py` detailing deterministic templates for tech domains (AI Security, ML, Developer Advocacy, etc.) and a dynamic fallback generator for custom domains.
+* **Agent Integration**: Updated `AgentService.initialize_agent` to construct and store the full `PersonaProfile` inside the repo at agent initialization. Exposed profile internally for future milestones.
+* **API Signature Preservation**: Kept endpoints and response contracts completely intact (the init API still returns only the `agentId`).
 
-### Important Technical Decisions
+### Verification
 
-- **Deterministic Generation**: Avoided using an LLM API at this stage to eliminate costs, network timeouts, and unpredictable/random persona updates.
-- **Preserved Capitalization**: Modified title generator to respect proper case notation (e.g. "WebAssembly", "MLOps").
-
-### Testing & Verification
-
-- Extended `tests/test_agent.py` to add 4 new tests verifying:
-  - Successful generation of detailed profiles from initialization data.
-  - Preservation of fields, stability across sequential reads, and differentiation between domains.
-  - Dynamic fallback generation.
-- Confirmed all 12 tests passed successfully.
+* **Deterministic Unit Tests**: Added 4 unit tests in `tests/test_agent.py` checking successful generation of rich tech profiles, preservation of capitalization (e.g. MLOps, WebAssembly), stability across sequential reads, and domain differentiations.
+* **Regression Suite**: Pytest runs agent, health, and persona tests. Verified all 12 tests pass successfully.
 
 ### Outcome
 
-Milestone 3 stable AI Persona Engine fully established.
+Milestone 3 stable AI Persona Engine fully established, verified, and documented.
 
 ### Deviations
 
-- **Roadmap Reordering**: Swapped the priority of Milestone 3 and Milestone 4 memory/discovery integrations to execute the Persona Engine first, as requested. The README was updated to reflect this adjustment.
-
-### Git Commit
-
-`e7622f7cf45e3f634017b03258ede6e7284cf9d2`
-
-`feat: add stable AI persona engine`
+* **Roadmap Reordering**: Swapped the priority of Milestone 3 and Milestone 4 memory/discovery integrations to execute the Persona Engine first, as requested. The README was updated to reflect this adjustment.
 
 ---
 
-## Milestone 4 — Live Topic Discovery
+## M4 · Live Topic Discovery
 
-### Date
-
-2026-08-08
+**Status:** Complete  
+**Focus:** Unified RSS/Atom feed adapter and discovery service  
+**Commit:** `845046010a96f177df3eb408bb8f67f441ee22d2` · `feat: add live AI topic discovery`  
+**Date:** 2026-08-08  
 
 ### Objective
 
 Enable the agent to independently discover current AI and technology topics from live information sources, parse feed items, normalize fields and timestamps, and technically deduplicate candidate topics.
 
+### Scope Boundaries
+
+> **Implemented:** TopicCandidate schema, unified RSS/Atom feed adapter parsing via standard ElementTree XML, URL normalization (dropping query trackers), datetime normalization to UTC, in-run URL deduplication, deterministic UUID5 generation.  
+> **Deferred:** Editorial judgment, content writer posts, autonomous scheduler loops, long-term memory.
+
 ### Coding-Agent Prompt
+
+<details>
+<summary><strong>View full coding-agent prompt</strong></summary>
 
 ```text
 We are beginning **Milestone 4 — Live Topic Discovery** of the Autonomous AI Creator hackathon project.
@@ -1705,73 +1735,67 @@ Also update the architecture section to show the new discovery layer.
 Do not claim autonomous publishing yet.
 ```
 
+</details>
+
 ### What This Prompt Does
 
 This prompt instructs the coding assistant to build a reusable **Topic Discovery Service** with a clean source adapter abstraction (`BaseSourceAdapter` and `RSSAtomAdapter`), selecting real-world AI and technology feeds (such as TechCrunch, NVIDIA, AWS, MIT Tech Review), normalising fields and timestamps to UTC ISO 8601, implementing basic URL-based run-time deduplication, isolating feed failures so that one broken source does not halt discovery, and implementing deterministic tests to verify all behaviors. It explicitly defers editorial judgment, final content writing, memory repetitions, and scheduling.
 
-### Implementation Summary
+### Architecture Snapshot
 
-1. **Configuration**:
-   - Added `discovery_feeds` list in settings with dynamic parser validator to process environment strings/JSON.
-   - Added `DISCOVERY_FEEDS` to `.env.example`.
-2. **Schema Definition**:
-   - Created `app/schemas/topic.py` defining the `TopicCandidate` Pydantic model.
-3. **Discovery Logic**:
-   - Developed `app/services/topic_discovery.py` featuring:
-     - `normalize_url` helper to strip tracking headers (`utm_*`) and sanitize hosts.
-     - `parse_datetime` helper translating RFC 822 and ISO 8601 into UTC timezone-aware datetimes.
-     - `RSSAtomAdapter` unified XML parser handling RSS and Atom feeds.
-     - `TopicDiscoveryService` managing requests, tracking unique URLs, generating stable UUIDs, and isolating connection errors.
-4. **Export configuration**:
-   - Exposed exports in package `__init__.py` files.
+```mermaid
+flowchart TD
+    A[TopicDiscoveryService discover_topics] --> B[Iterate feeds]
+    B --> C[RSSAtomAdapter XML parsing]
+    C --> D[normalize_url & parse_datetime]
+    D --> E[In-run URL deduplication & UUID5 ID gen]
+    E --> F[List of TopicCandidates]
+```
 
-### Important Technical Decisions
+### Implementation
 
-- **Stable UUID Generation**: Used `uuid.uuid5(uuid.NAMESPACE_URL, normalized_url)` to guarantee that identical URLs generate identical topic candidate IDs, simplifying technical deduplication.
-- **Fail-Safe HTTP Isolation**: Wrapped feed fetch requests in try-except blocks so that network failures or server errors on a single feed are logged and isolated, returning healthy results from other feeds.
-- **Standard Library XML Parsing**: Used Python's standard `xml.etree.ElementTree` to keep dependencies clean and small.
+* **Settings Extension**: Added default feeds (TechCrunch AI, NVIDIA Developer, AWS ML, MIT Tech Review AI) and a JSON/string validator in settings configuration. Documented feeds configuration in `.env.example`.
+* **Model Schema**: Created `app/schemas/topic.py` defining the `TopicCandidate` schema without any editorial fields.
+* **Unified XML Parsing**: Developed `RSSAtomAdapter` in `app/services/topic_discovery.py` using standard `xml.etree.ElementTree` to check feed formats and parse items.
+* **Normalization Utilities**: Implemented `normalize_url` (stripping trailing slashes and query parameters like `utm_*`) and `parse_datetime` (converting RFC 822 and ISO 8601 strings into timezone-aware UTC datetime instances).
+* **Topic Discovery Service**: Developed `TopicDiscoveryService` combining parsed candidates, generating stable UUIDs using `uuid.uuid5(uuid.NAMESPACE_URL, normalized_url)`, and implementing failure isolation (try-except blocks prevent failing feeds from blocking healthy ones).
 
-### Testing & Verification
+### Verification
 
-- Created `tests/test_topic_discovery.py` verifying:
-  - URL normalization and datetime parser behaviors.
-  - Successful RSS and Atom parsing.
-  - Graceful skips of items missing titles or links.
-  - Recovery from malformed dates.
-  - Discovery execution across multiple sources.
-  - Isolation of failed connection runs.
-  - In-run duplicate URL filtering.
-  - Valid return structures.
-- All 25 tests pass successfully.
-- Conducted controlled live verification using `scratch/verify_discovery.py` confirming 150 candidates fetched successfully with active deduplication, timezone-aware UTC stamps, and isolated HTTP 404 test runs.
+* **Deterministic Unit Tests**: Created `tests/test_topic_discovery.py` verifying parsing, URL sanitization, date formatting fallbacks, duplicate URL filtering, and isolated connection failures.
+* **Regression Suite**: Pytest runs M1–M4 tests. Confirmed all 25 tests pass.
+* **Live Verification**: Ran `scratch/verify_discovery.py` against configured feeds, successfully discovering 150 candidate items and verifying failure isolation.
 
 ### Outcome
 
-Milestone 4 Topic Discovery layer implemented, tested, and verified.
+Milestone 4 live topic discovery fully implemented, tested, and verified.
 
 ### Deviations
 
 None.
 
-### Git Commit
-
-`845046010a96f177df3eb408bb8f67f441ee22d2`
-
-`feat: add live AI topic discovery`
-
 ---
 
-## Milestone 5 — Editorial Judgment
+## M5 · Editorial Judgment
 
-### Date
-
-2026-08-08
+**Status:** Complete  
+**Focus:** Persona-aware topic evaluation and quality filtering  
+**Commit:** `ef6d57cad3e21870a20da42efa44513b8da0d6de` · `feat: add persona-aware editorial judgment`  
+**Date:** 2026-08-08  
 
 ### Objective
 
 Build an Editorial Judgment Engine that evaluates discovered AI/technology topics against the agent's persona and intentionally decides which topics are worth publishing and which should be rejected.
 
+### Scope Boundaries
+
+> **Implemented:** EditorialDecision schema, BaseLLMClient interface, MockLLMClient provider, EditorialJudgmentService scoring heuristics, automatic quality gates, batch evaluations, and prioritizing.  
+> **Deferred:** Long-term memory repetition checks, content generation post writing, publishing scheduler.
+
 ### Coding-Agent Prompt
+
+<details>
+<summary><strong>View full coding-agent prompt</strong></summary>
 
 ```text
 We are beginning **Milestone 5 — Editorial Judgment** of the Autonomous AI Creator hackathon project.
@@ -2595,41 +2619,42 @@ SELECT THE BEST
 Keep the implementation focused, explainable, testable, and genuinely persona-aware.
 ```
 
+</details>
+
 ### What This Prompt Does
 
-This prompt instructs the coding assistant to build a reusable **Editorial Judgment Service** that evaluates candidate topics against the agent's stable persona profile (matching interests, avoided topics, freshness recency, and source credibility), implementing strict ACCEPT and REJECT decision states with clear explanations, building a dual-engine adapter layout (supporting local deterministic rules and mocked LLM calls), and writing comprehensive unit and integration tests to verify all behaviors.
+This prompt instructs the coding assistant to build a reusable **Editorial Judgment Service** that evaluates candidate topics against the agent's stable persona profile (matching interests, avoided topics, freshness recency, and source credibility), implementing strict ACCEPT and REJECT decision states with clear explanations, building a dual-engine adapter layout (supporting local deterministic rules and mocked LLM calls), and writing comprehensive unit and integration tests to verify all behaviors. It explicitly defers content writing, memory database integration, and loop scheduling.
 
-### Implementation Summary
+### Architecture Snapshot
 
-1. **Configuration**:
-   - Added settings for `editorial_engine_type` and `editorial_threshold` in settings, documented in `.env.example`.
-2. **Schema Definition**:
-   - Created `app/schemas/editorial.py` defining the `EditorialDecision` model.
-3. **Logic and Service Layer**:
-   - Developed `app/services/llm.py` featuring `BaseLLMClient` and `MockLLMClient`.
-   - Developed `app/services/editorial.py` implementing `EditorialJudgmentService`. It processes candidate metrics, implements batch evaluations with error isolation, ranks/prioritizes results, and applies heuristic checks on interest matching, stale deadlines, and avoided politics terms.
-4. **Export Configuration**:
-   - Exposes schemas and services in package `__init__.py` files.
+```mermaid
+flowchart TD
+    A[Topic Candidates] --> B[EditorialJudgmentService evaluate_candidates]
+    C[Persona Profile] --> B
+    B --> D[Deterministic / LLM Engines]
+    D --> E[Scoring & Quality Gates]
+    E --> F[Prioritized Accepted / Rejected candidates]
+```
 
-### Important Technical Decisions
+### Implementation
 
-- **Minimum Quality Gates**: Topics must meet a minimum relevance score of 5.0 (at least one interest match) and freshness score of 5.0 (published within 7 days) to be accepted, preventing irrelevant or stale posts.
-- **Explainable Reasons**: Detailed context-specific accept/reject explanations generated during deterministic runs (e.g. matching interest names, stale counters, clickbait alerts, or avoided classifications).
-- **Error Resilient Batches**: Iterates batch evaluations in isolated try-except blocks, falling back to a safe `REJECT` decision if a candidate is malformed or an LLM call times out.
+* **Settings Extension**: Added Settings settings for `editorial_engine_type` (default `"deterministic"`) and `editorial_threshold` (default `6.0`). Documented them in `.env.example`.
+* **Model Schema**: Created `app/schemas/editorial.py` defining the `EditorialDecision` schema with sub-scores.
+* **LLM Abstraction**: Developed `BaseLLMClient` interface and `MockLLMClient` for tests (simulates timeouts, malformed JSON, and success responses).
+* **Heuristic Scoring**: Implemented rule-based scoring in `app/services/editorial.py`:
+  * *Relevance Fit (`relevanceScore`)*: Matches `core_interests` (+2.5 per match). Set immediately to 0.0 for `topics_to_avoid`. Minimum of 5.0 (>= 1 match) required to accept.
+  * *Freshness (`freshnessScore`)*: Penalty for stale content (> 7 days). Minimum of 5.0 required to accept.
+  * *Significance (`significanceScore`)*: Evaluates impact (breakthroughs, exploits boost score; promotions and conferences reduce score).
+  * *Editorial Fit (`personaFitScore`)*: Average relevance and significance, penalized by clickbait hype terms (-2.0).
+* **Acceptance criteria**: Requires `overall_score >= threshold` and `relevanceScore >= 5.0` and `freshnessScore >= 5.0`.
+* **Explainable Reasons**: Context-specific rationales returned explaining matches, stale timers, or clickbait alerts.
+* **Resilient Batch Runs**: Evaluates batches in try-except isolation blocks and offers prioritized filtering.
 
-### Testing & Verification
+### Verification
 
-- Created `tests/test_editorial.py` verifying:
-  - Acceptance of highly relevant topics, rejection of chef/celebrity announcements.
-  - Significance checks (breakthroughs vs. webinars).
-  - Source quality differences (NVIDIA/AWS vs. unknown).
-  - Freshness penalties and stale content rejection.
-  - Avoided politics matching (expanded stems) and clickbait filters.
-  - Persona-aware outputs (accepting security topic for security, rejecting for robotics).
-  - Mocked LLM success, malformed, and timeout errors (safe rejects).
-  - Batch evaluation and prioritized score ordering.
-- Verified all 33 tests pass successfully.
-- Triggered controlled live evaluation run using `scratch/verify_editorial.py` confirming expected outputs across all tech dataset fixtures.
+* **Deterministic Unit Tests**: Created `tests/test_editorial.py` validating relevance filtering, significance checks, freshness penalization, avoided topics politics matching (expanded stems), clickbait filters, persona-aware differentiation, mock LLM pipeline errors, and batch prioritizing.
+* **Regression Suite**: Run pytest on M1–M5 tests. Verified all 33 tests pass successfully.
+* **Manual Verification**: Run `scratch/verify_editorial.py` against synthetic dataset fixtures, successfully validating accepts and rejections.
 
 ### Outcome
 
@@ -2639,9 +2664,65 @@ Milestone 5 Editorial Judgment Engine successfully implemented, tested, and veri
 
 None.
 
-### Git Commit
+---
 
-`ef6d57cad3e21870a20da42efa44513b8da0d6de`
+## Development Timeline
 
-`feat: add persona-aware editorial judgment`
+```text
+  M1 ── Foundation & Memory Abstraction
+ │     Aug 08, 2026
+ │
+ ├──── M2 ── Agent Initialization & Feed API
+ │     │     Aug 08, 2026
+ │     │
+ │     └──── M3 ── Stable Persona Engine
+ │           │     Aug 08, 2026
+ │           │
+ │           └──── M4 ── Live Topic Discovery
+ │                 │     Aug 08, 2026
+ │                 │
+ │                 └──── M5 ── Editorial Judgment Engine
+ │                       │     Aug 08, 2026
+ │                       ▼
+ │                     [Current State]
+```
 
+---
+
+## AI-Assisted Development Principles
+
+Across milestones, the coding-agent workflow followed a consistent pattern:
+1. **Inspect existing architecture** and files before writing code.
+2. **Implement only the current milestone's scope** to prevent bloated abstractions.
+3. **Preserve previous milestone commits** without squashing or force-pushing.
+4. **Add deterministic tests** using mocks and local fixtures, avoiding external network dependencies.
+5. **Update documentation** (README and AI Usage Log) synchronously with code changes.
+6. **Record the actual AI prompt** and engineering outcomes honestly.
+7. **Verify the implementation** running the regression suite before git commits.
+8. **Use focused conventional Git commits** for each step.
+
+---
+
+## Current State
+
+### Implemented
+
+* **Project foundation**: Modular FastAPI setup, settings validations, testing configurations.
+* **Agent Initialization**: Generates cryptographically unique agent IDs, validates persona configuration.
+* **Feed API Contract**: Exposes `/feed` returning published articles.
+* **Stable Persona Engine**: Generates deterministic and consistent AI identities.
+* **Live Topic Discovery**: Fetches configured sources, normalizes URLs and datetimes, deduplicates URLs.
+* **Editorial Judgment Engine**: Evaluates candidates against persona, applies scoring and quality gates.
+
+### Intentionally Not Yet Implemented
+
+* **Persistent Publishing Memory**: The system currently uses an ephemeral `InMemoryAgentRepository` and lacks persistent DB memory.
+* **Final Post Generation**: Post writing and social media text formatting are deferred.
+* **Autonomous Scheduling**: Loops running over 48 hours are not implemented.
+* **Autonomous Publishing**: Publishing decisions are not yet automated.
+
+---
+
+## Next Planned Capabilities
+
+The next development stages will connect editorial judgment with persistent memory (using the **Breeth** persistent memory layer), content generation (LLM-powered Writer), scheduling, and autonomous publishing so that the initialized agent can continue operating autonomously.
