@@ -58,7 +58,7 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M4** | Discovery | Live AI/technology topic discovery | `845046010a96f177df3eb408bb8f67f441ee22d2`<br>`feat: add live AI topic discovery` |
 | **M5** | Editorial Judgment | Persona-aware topic selection and scoring | `ef6d57cad3e21870a20da42efa44513b8da0d6de`<br>`feat: add persona-aware editorial judgment` |
 | **M6** | Persistent Agent Memory | Local persistent agent-scoped memory & repetition checks | `c20c589a803890afdbb4741ceddd54e91722bec7`<br>`feat: add persistent agent memory` |
-| **M7** | Content Generation | Persona-consistent post text grounded in sources | *Pending* |
+| **M7** | Content Generation | Persona-consistent post text grounded in sources | `bdb265a657579875c1e27216423394c18deb45a7`<br>`feat: add autonomous content generation` |
 
 ---
 
@@ -3866,7 +3866,7 @@ Milestone 7 autonomous content generation layer fully implemented, tested, and v
 
 ### Git
 
-*Pending*
+`bdb265a657579875c1e27216423394c18deb45a7`
 
 `feat: add autonomous content generation`
 
