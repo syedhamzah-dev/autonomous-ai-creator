@@ -42,6 +42,7 @@ Feed API (Exposes GET /api/agent/feed for evaluators)
 * **Milestone 4**: Implemented the **Topic Discovery Service** with unified RSS/Atom source adapters, timezone/timestamp normalization, URL deduplication, and failure isolation.
 * **Milestone 5**: Implemented the **Editorial Judgment Engine** featuring deterministic heuristic scoring, automated rejection rules, and LLM mocked clients.
 * **Milestone 6**: Implemented the **Persistent Agent Memory** layer with agent-scoped local JSON storage and token keyword overlap checks.
+* **Milestone 7**: Implemented the **Autonomous Content Generation** subsystem, converting accepted candidates into structured post text aligned with the persona.
 
 ---
 
@@ -217,6 +218,52 @@ To support future autonomous flows and prevent duplicate post publishing, the me
 
 ---
 
+## Autonomous Content Generation
+
+The **Autonomous Content Generation** subsystem is a core pipeline component introduced in Milestone 7. It transforms editorially accepted topic candidates into high-quality social-media posts aligned with the specific technical focus, tone, and opinions of the agent's persona, while remaining strictly grounded in verified source details and informed by past memory context.
+
+### Visual Architecture & Progression
+
+```text
+Topic Discovery ──► Memory Context ──► Editorial Judgment ──► ACCEPT ──► Content Generation (CURRENT) ──► Generated Post
+```
+
+```text
+                              Live Topic
+                                  │
+                                  ▼
+                            Topic Candidate
+                                  │
+                                  ▼
+                          Editorial Judgment
+                                  │
+                                  ▼
+                               ACCEPT
+                                  │
+                                  ▼
+                           Content Generator
+                                  │
+                                  ▼
+                            Generated Post
+```
+
+### Decoupled Provider Strategy
+Like the editorial judgment layer, the content generator abstracts the LLM API calls behind the `BaseLLMClient` interface. The rest of the application remains isolated from the underlying LLM provider, ensuring that migrating between different cloud LLM services (Gemini, Claude, GPT) is seamless and requires zero service logic changes.
+
+### Prompt Engineering Directives
+The generator constructs a rich structured prompt that guides the LLM to:
+1. **Persona Alignment**: Restrict topics to the agent's configured `domain` (e.g. AI Security or Robotics) and write with the defined `tone` (e.g. Analytical and skeptical).
+2. **Technical Depth & Voice**: Adopt the technical depth of an industry professional, avoiding generic hype phrases ("mind-blowing", "game changer", "revolutionary") and excessive emojis/hashtags.
+3. **Grounding & Honesty**: Use only the verified findings, facts, and figures from the candidate topic. Unsubstantiated claims are strictly prohibited.
+4. **Historical Continuity**: Incorporate the agent's recent memory list to maintain consistency and prevent repetitive headlines.
+
+### Hard Gating & Quality Controls
+* **Blocked Rejects**: Trying to write a post for an editorially rejected topic candidate raises a `ValueError` automatically.
+* **Preservation of Rationale & Sources**: Generated posts must retain the source URLs and the selection rationale from the editorial judgment decision.
+* **Integrity Validation**: Verifies that post text is non-empty and generates unique tracking IDs and timezone-aware UTC timestamps.
+
+---
+
 ## Project Structure
 
 ```text
@@ -246,11 +293,13 @@ autonomous-ai-creator/
 │   │   ├── agent.py
 │   │   ├── editorial.py    # EditorialDecision schemas
 │   │   ├── memory.py       # AgentMemory schemas
+│   │   ├── post.py         # GeneratedPost schemas
 │   │   ├── persona.py
 │   │   └── topic.py
 │   └── services/           # Business logic layer
 │       ├── __init__.py
 │       ├── agent.py        # Coordinates UUID creation and initialization flow
+│       ├── content_generator.py # ContentGeneratorService post writing engine
 │       ├── editorial.py    # EditorialJudgmentService logic
 │       ├── llm.py          # BaseLLMClient and MockLLMClient providers
 │       ├── memory.py       # BaseMemory contract and LocalFileMemoryRepository
@@ -262,6 +311,7 @@ autonomous-ai-creator/
     ├── __init__.py
     ├── conftest.py
     ├── test_agent.py       # Checks agent init, validation, and feed APIs
+    ├── test_content_generator.py # Content Generator post writing tests
     ├── test_editorial.py   # Editorial Judgment unit and integration tests
     ├── test_health.py      # Checks base service health
     ├── test_memory.py      # Persistent agent memory tests
@@ -383,8 +433,8 @@ pytest
 
 ## Current Limitations & Unimplemented Features
 The following features are **NOT** implemented yet:
-- **LLM Persona Writing**: No LLM text generation or prompt orchestration logic.
 - **Autonomous Scheduler**: No loops running over 48 hours yet.
+- **Autonomous Publishing**: Publishing decisions are not yet automated.
 - **External Memory Service**: External cloud-based memory layers (like Breeth) are not integrated yet.
 
 ---
@@ -397,6 +447,6 @@ The following features are **NOT** implemented yet:
 - [x] **Milestone 4**: Live AI Topic Discovery layer with unified RSS/Atom adapters.
 - [x] **Milestone 5**: Editorial Judgment Engine for persona-aware filter control.
 - [x] **Milestone 6**: Persistent Agent Memory layer with local JSON file repositories and repetition checks.
-- [ ] **Milestone 7**: Memory integration via external memory provider Breeth.
-- [ ] **Milestone 8**: LLM-powered persona-based article generation (Writer).
-- [ ] **Milestone 9**: Scheduler for autonomous loop execution, full 48-hour loop operation.
+- [x] **Milestone 7**: Autonomous Content Generation converting accepted topics into persona-consistent social-media posts.
+- [ ] **Milestone 8**: Autonomous Execution Loop and Scheduling for continuous loop operations.
+- [ ] **Milestone 9**: Memory integration via external memory provider Breeth.

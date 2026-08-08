@@ -3,6 +3,7 @@ from app.services.memory import BaseMemory, LocalFileMemoryRepository, MemorySer
 from app.services.topic_discovery import TopicDiscoveryService, BaseSourceAdapter
 from app.services.llm import BaseLLMClient, MockLLMClient
 from app.services.editorial import EditorialJudgmentService
+from app.services.content_generator import ContentGeneratorService
 
 __all__ = [
     "BaseMemory", 
@@ -12,6 +13,7 @@ __all__ = [
     "BaseSourceAdapter",
     "BaseLLMClient",
     "MockLLMClient",
-    "EditorialJudgmentService"
+    "EditorialJudgmentService",
+    "ContentGeneratorService"
 ]
 

@@ -2,11 +2,26 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 from app.schemas.persona import PersonaProfile
 from app.schemas.topic import TopicCandidate
+from app.schemas.editorial import EditorialDecision
+from app.schemas.memory import AgentMemory
 
 class BaseLLMClient(ABC):
     """
     Abstract base class for LLM clients used in the Autonomous AI Creator project.
     """
+    @abstractmethod
+    async def generate_post_content(
+        self,
+        persona: PersonaProfile,
+        candidate: TopicCandidate,
+        decision: EditorialDecision,
+        memories: List[AgentMemory]
+    ) -> Dict[str, Any]:
+        """
+        Request a generated social media post and metadata from the LLM provider.
+        """
+        pass
+
     @abstractmethod
     async def generate_structured_decision(
         self,
@@ -45,6 +60,7 @@ class MockLLMClient(BaseLLMClient):
     """
     def __init__(self) -> None:
         self.mock_response: Optional[Dict[str, Any]] = None
+        self.mock_post_response: Optional[Dict[str, Any]] = None
         self.should_raise_timeout = False
         self.should_return_malformed = False
 
@@ -53,6 +69,14 @@ class MockLLMClient(BaseLLMClient):
         Set up a specific mock dictionary response.
         """
         self.mock_response = response
+        self.should_raise_timeout = False
+        self.should_return_malformed = False
+
+    def configure_mock_post_response(self, response: Dict[str, Any]) -> None:
+        """
+        Set up a specific mock dictionary response for post content generation.
+        """
+        self.mock_post_response = response
         self.should_raise_timeout = False
         self.should_return_malformed = False
 
@@ -151,4 +175,60 @@ class MockLLMClient(BaseLLMClient):
             "sourceQualityScore": 7.0,
             "personaFitScore": 3.0,
             "confidence": 0.8
+        }
+
+    async def generate_post_content(
+        self,
+        persona: PersonaProfile,
+        candidate: TopicCandidate,
+        decision: EditorialDecision,
+        memories: List[AgentMemory]
+    ) -> Dict[str, Any]:
+        if self.should_raise_timeout:
+            raise TimeoutError("Simulated LLM service connection timeout during post generation.")
+
+        if self.should_return_malformed:
+            return {
+                "text": "",
+                "evaluationResult": "This text is empty and violates schema restrictions."
+            }
+
+        if self.mock_post_response is not None:
+            return self.mock_post_response
+
+        # Default smart generated text based on domain/persona and topic summary/title:
+        title = candidate.title
+        source_urls = [candidate.sourceUrl] if candidate.sourceUrl else []
+
+        # Determine writing voice or technical depth from domain
+        domain_lower = persona.domain.lower()
+        if "security" in domain_lower:
+            text = (
+                f"[{persona.name} | AI Security] Securing transformer frameworks is paramount. "
+                f"Analyzing '{title}': this recent development shows how model vulnerabilities are evolving. "
+                f"Read more here: {candidate.sourceUrl}"
+            )
+        elif "robotics" in domain_lower:
+            text = (
+                f"[{persona.name} | Robotics] Robotic autonomous navigation update! "
+                f"Evaluating new perception modules in '{title}'. A huge milestone for hardware accelerators. "
+                f"Read more here: {candidate.sourceUrl}"
+            )
+        else:
+            text = (
+                f"[{persona.name} | {persona.domain}] In-depth coverage on '{title}'. "
+                f"This topic represents a significant technical breakthrough in the domain. "
+                f"Read more here: {candidate.sourceUrl}"
+            )
+
+        # Build default response
+        return {
+            "text": text,
+            "rationale": " | ".join(decision.reasons),
+            "sources": source_urls,
+            "generationMetadata": {
+                "model": "MockLLMClient",
+                "version": "1.0",
+                "matchedInterestsCount": len(persona.core_interests)
+            }
         }

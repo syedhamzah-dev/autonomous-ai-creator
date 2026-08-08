@@ -35,13 +35,13 @@ The Autonomous AI Creator was intentionally built as a sequence of small, testab
        M6: Persistent Agent Memory
                   │
                   ▼
-       M7: Memory integration via Breeth (Planned)
+       M7: Autonomous Content Generation
                   │
                   ▼
-       M8: Content Generation (Planned)
+       M8: Autonomous Execution Loop & Scheduling (Planned)
                   │
                   ▼
-      M9: Autonomous Publishing (Planned)
+       M9: Memory integration via Breeth (Planned)
 ```
 
 Each milestone has its own scope, verification, documentation, and Git history. Planned milestones will connect editorial judgment with persistent memory, content generation, and autonomous scheduling.
@@ -58,6 +58,7 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M4** | Discovery | Live AI/technology topic discovery | `845046010a96f177df3eb408bb8f67f441ee22d2`<br>`feat: add live AI topic discovery` |
 | **M5** | Editorial Judgment | Persona-aware topic selection and scoring | `ef6d57cad3e21870a20da42efa44513b8da0d6de`<br>`feat: add persona-aware editorial judgment` |
 | **M6** | Persistent Agent Memory | Local persistent agent-scoped memory & repetition checks | `c20c589a803890afdbb4741ceddd54e91722bec7`<br>`feat: add persistent agent memory` |
+| **M7** | Content Generation | Persona-consistent post text grounded in sources | *Pending* |
 
 ---
 
@@ -3739,6 +3740,138 @@ None.
 
 ---
 
+## Milestone 7 — Autonomous Content Generation
+
+### Date
+
+2026-08-08
+
+### Objective
+
+Introduce a content generation layer that converts editorially accepted topics into high-quality social-media posts aligned with the persona's voice, interests, and opinions, while ensuring strict grounding in sources and utilizing context from memory.
+
+### Coding-Agent Prompt
+
+<details>
+<summary><strong>View full coding-agent prompt</strong></summary>
+
+```text
+# Milestone 7 — Autonomous Content Generation
+
+We are beginning **Milestone 7** of the Autonomous AI Creator hackathon project.
+
+The previous milestones established:
+
+* Project foundation
+* Agent initialization
+* Feed API
+* Persona configuration and consistency
+* Live AI/technology topic discovery
+* Topic normalization and source handling
+* Editorial judgment
+* ACCEPT / REJECT decisions
+* Editorial reasoning
+* Persistent agent-scoped memory
+* Repetition detection foundation
+* Automated testing
+* Professional README
+* Professional AI Usage Log
+
+The next capability is:
+
+> **Generate high-quality AI/technology content autonomously from an accepted editorial topic while maintaining the configured persona's identity, voice, interests, and opinions.**
+
+This milestone must establish the content-generation layer without prematurely implementing the complete autonomous publishing loop.
+
+---
+
+# IMPORTANT SCOPE
+
+Implement **Content Generation**.
+
+Do NOT implement:
+
+* autonomous scheduling
+* background workers
+* continuous autonomous execution
+* real social-media publishing
+* the complete 48-hour publishing loop
+* frontend/dashboard
+* multi-agent architecture
+* Breeth
+* new external memory providers
+* engagement analytics
+* image/video generation
+
+Do NOT rebuild topic discovery or editorial judgment.
+
+Reuse the existing implementations from previous milestones.
+
+The content generator should consume the output of the existing editorial pipeline.
+
+```
+
+</details>
+
+### What This Prompt Does
+
+This prompt instructs the coding assistant to implement a decoupled content-generation subsystem. It consumes output from the editorial engine, validates that candidates are accepted, extracts recent memories for context, queries the LLM provider via the `BaseLLMClient` interface for structured post text, rationales, and source arrays, and validates the output against quality constraints. It mandates preserving source URLs and editorial rationales, keeping the implementation replaceable and provider-independent, and testing for basic generation, persona consistency, editorial integration, grounding, and provider errors. It explicitly defers continuous scheduling, background loops, and real-world publishing integrations.
+
+### Scope Boundaries
+
+> **Implemented:** `GeneratedPost` schema model, `ContentGeneratorService` validation flow, `generate_post_content` interfaces and mock implementation with domain technical tone and mocks, test suite verifying gating, grounding, and memory context.  
+> **Deferred:** Continuous schedulers, autonomous 48-hour background execution loops, analytics dashboards, real social media API integrations.
+
+### Architecture Snapshot
+
+```mermaid
+flowchart TD
+    A[Accepted Candidate] --> B[ContentGeneratorService]
+    B --> C[Query memory context]
+    B --> D[BaseLLMClient generate_post_content]
+    D --> E[GeneratedPost output with source URLs and rationale]
+```
+
+### Implementation
+
+* **Data Model Schema**: Created `app/schemas/post.py` containing the `GeneratedPost` model extending `PostModel` with unique UUIDs, timezone-aware UTC `createdAt` timestamps, and internal tracking fields (`agentId`, `topicId`, `generationMetadata`).
+* **LLM Client Updates**: Expanded `BaseLLMClient` with `generate_post_content` abstract methods. Added the implementation to `MockLLMClient` returning structured post text customized by persona domain (AI Security vs. Robotics).
+* **Gated Generation Service**: Built `ContentGeneratorService` in `app/services/content_generator.py` coordinating memory context loading and checking decision filters (non-ACCEPT results raise a `ValueError` immediately).
+* **Constraints Verification**: Enforced non-empty text requirements and verbatim source URL and rationale preservation.
+
+### Verification
+
+* **Deterministic Unit Tests**: Created `tests/test_content_generator.py` verifying:
+  - Valid accepted topic generation.
+  - Persona domain and tone consistency.
+  - Editorial gating (ACCEPT topics pass, REJECT topics block with ValueError).
+  - Verbatim source url preservation (preventing hallucinations).
+  - Context memories retrieval and inclusion in prompt.
+  - Parameter validation and error isolation.
+* **Regression Suite**: Pytest verifies M1–M7 test runs. Confirmed all 40 tests pass successfully.
+* **Manual Verification**: Created `scratch/verify_generation.py` to run E2E scenarios across personas and reject cases.
+
+### Technical Decisions
+
+* **Extend PostModel**: Rather than creating duplicate models, `GeneratedPost` extends `PostModel` which keeps it compatible with the existing API feed contract.
+* **Decoupled LLM interface**: Kept prompts inside `BaseLLMClient` subclass implementations, keeping services vendor-neutral.
+
+### Deviations
+
+None.
+
+### Outcome
+
+Milestone 7 autonomous content generation layer fully implemented, tested, and verified.
+
+### Git
+
+*Pending*
+
+`feat: add autonomous content generation`
+
+---
+
 ## Development Timeline
 
 ```text
@@ -3759,8 +3892,11 @@ None.
  │                       │
  │                       └──── M6 ── Persistent Agent Memory
  │                             │     Aug 08, 2026
- │                             ▼
- │                           [Current State]
+ │                             │
+ │                             └──── M7 ── Autonomous Content Generation
+ │                                   │     Aug 08, 2026
+ │                                   ▼
+ │                                 [Current State]
 ```
 
 ---
@@ -3790,11 +3926,11 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Live Topic Discovery**: Fetches configured sources, normalizes URLs and datetimes, deduplicates URLs.
 * **Editorial Judgment Engine**: Evaluates candidates against persona, applies scoring and quality gates.
 * **Persistent Agent Memory**: Local persistent agent-scoped JSON storage with token keyword repetition checks.
+* **Autonomous Content Generation**: Generates high-quality, grounded, persona-consistent social-media posts from accepted topics.
 
 ### Intentionally Not Yet Implemented
 
 * **External Memory Service**: Connection to cloud memory providers like Breeth is not integrated yet.
-* **Final Post Generation**: Post writing and social media text formatting are deferred.
 * **Autonomous Scheduling**: Loops running over 48 hours are not implemented.
 * **Autonomous Publishing**: Publishing decisions are not yet automated.
 
@@ -3802,4 +3938,4 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 
 ## Next Planned Capabilities
 
-The next development stages will connect editorial judgment and memory with content generation (LLM-powered Writer), external database adapters (Breeth), and scheduling so that the initialized agent can continue operating autonomously.
+The next development stages will connect content generation and memory with scheduling and autonomous execution loops so that the initialized agent can run continuously without manual human prompts.
