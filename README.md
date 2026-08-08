@@ -43,6 +43,7 @@ Feed API (Exposes GET /api/agent/feed for evaluators)
 * **Milestone 5**: Implemented the **Editorial Judgment Engine** featuring deterministic heuristic scoring, automated rejection rules, and LLM mocked clients.
 * **Milestone 6**: Implemented the **Persistent Agent Memory** layer with agent-scoped local JSON storage and token keyword overlap checks.
 * **Milestone 7**: Implemented the **Autonomous Content Generation** subsystem, converting accepted candidates into structured post text aligned with the persona.
+* **Milestone 8**: Implemented the **Autonomous Execution Loop & Scheduling** layer, triggering periodic loops inside the application lifespan.
 
 ---
 
@@ -264,6 +265,54 @@ The generator constructs a rich structured prompt that guides the LLM to:
 
 ---
 
+## Autonomous Execution Loop & Scheduling
+
+The **Autonomous Execution Loop & Scheduling** layer is a core pipeline component introduced in Milestone 8. It wraps the entire codebase sequence (discover -> persistent memory screening -> editorial filter -> generate post drafts -> store memories) and schedules periodic executions inside the FastAPI lifecycle, allowing initialized agents to run continuously over time without human prompt triggers.
+
+### Visual Architecture & Pipeline Flow
+
+```text
+┌───────────────────┐
+│ Autonomous        │
+│ Scheduler         │
+└─────────┬─────────┘
+          │
+          ▼
+   Topic Discovery (RSS/Atom Feeds)
+          │
+          ▼
+   Persistent Memory (Keyword overlap checks)
+          │
+          ▼
+  Editorial Judgment (Heuristics Filter)
+       ↙       ↘
+   REJECT      ACCEPT
+      │           │
+      ▼           ▼
+   Memory     Content Generation (LLM Post Writer)
+                  │
+                  ▼
+             Draft Store (Prepared/Pending Posts)
+                  │
+                  ▼
+          Persistent Memory
+```
+
+### Agent Lifecycle States
+Each agent transitions through distinct states managed centrally in repository metadata:
+* **`INITIALIZED`**: Agent profile and stable persona generated. Scheduler loop is not yet running.
+* **`RUNNING`**: The scheduled asyncio background task is active and triggering runs.
+* **`PAUSED`**: The scheduled loops have been cancelled or stopped cleanly.
+
+### Concurrency Lock Guards
+To prevent duplicate cycle tasks from overlapping on slow API responses, an in-memory lock (`_active_runs` set) blocks starting a new execution cycle for an agent if one is already in progress.
+
+### Scheduling & Graceful Resiliency
+* **FastAPI Lifespan Bind**: Background loops use standard `asyncio.create_task` tasks. Loops are cleanly shut down via `lifespan` application hooks during server teardowns.
+* **Error Isolation**: Failures in RSS parsers, memory files, or LLM providers are caught inside the cycle loop, updating cycle status to `FAILED` and logging results cleanly without breaking the background loop scheduling process.
+
+---
+
 ## Project Structure
 
 ```text
@@ -299,6 +348,7 @@ autonomous-ai-creator/
 │   └── services/           # Business logic layer
 │       ├── __init__.py
 │       ├── agent.py        # Coordinates UUID creation and initialization flow
+│       ├── autonomous.py   # AgentScheduler loop and AutonomousExecutionService orchestrator
 │       ├── content_generator.py # ContentGeneratorService post writing engine
 │       ├── editorial.py    # EditorialJudgmentService logic
 │       ├── llm.py          # BaseLLMClient and MockLLMClient providers
@@ -311,6 +361,7 @@ autonomous-ai-creator/
     ├── __init__.py
     ├── conftest.py
     ├── test_agent.py       # Checks agent init, validation, and feed APIs
+    ├── test_autonomous.py  # Scheduler periodic loop E2E tests
     ├── test_content_generator.py # Content Generator post writing tests
     ├── test_editorial.py   # Editorial Judgment unit and integration tests
     ├── test_health.py      # Checks base service health
@@ -433,7 +484,6 @@ pytest
 
 ## Current Limitations & Unimplemented Features
 The following features are **NOT** implemented yet:
-- **Autonomous Scheduler**: No loops running over 48 hours yet.
 - **Autonomous Publishing**: Publishing decisions are not yet automated.
 - **External Memory Service**: External cloud-based memory layers (like Breeth) are not integrated yet.
 
@@ -448,5 +498,6 @@ The following features are **NOT** implemented yet:
 - [x] **Milestone 5**: Editorial Judgment Engine for persona-aware filter control.
 - [x] **Milestone 6**: Persistent Agent Memory layer with local JSON file repositories and repetition checks.
 - [x] **Milestone 7**: Autonomous Content Generation converting accepted topics into persona-consistent social-media posts.
-- [ ] **Milestone 8**: Autonomous Execution Loop and Scheduling for continuous loop operations.
-- [ ] **Milestone 9**: Memory integration via external memory provider Breeth.
+- [x] **Milestone 8**: Autonomous Execution Loop and Scheduling for continuous loop operations.
+- [ ] **Milestone 9**: Autonomous Publishing & Feed Integration.
+- [ ] **Milestone 10**: Memory integration via external memory provider Breeth.
