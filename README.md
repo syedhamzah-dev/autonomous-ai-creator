@@ -40,6 +40,7 @@ flowchart TD
 ```
 
 ### Milestone Progress
+
 * **Milestone 1**: Established the base FastAPI structure, settings validation, and base memory interface contracts.
 * **Milestone 2**: Implemented the core hackathon API contract (agent initialization, in-memory repository, slim FastAPI routers).
 * **Milestone 3**: Implemented the **Persona Engine** to construct stable, coherent technology/AI identities from a name and domain.
@@ -57,12 +58,15 @@ flowchart TD
 The **Persona Engine** is a core reusable subsystem introduced in Milestone 3. It transforms the basic configuration provided during agent initialization (`name` and `domain`) into a stable, rich, technology-focused persona profile.
 
 ### Why Persona Consistency Matters
-An AI content creator needs a stable voice and defined boundary of interest. If the persona changes between API calls or regenerates randomly, the agent's identity breaks, resulting in disjointed editorial judgment and inconsistent post generation. 
+
+An AI content creator needs a stable voice and defined boundary of interest. If the persona changes between API calls or regenerates randomly, the agent's identity breaks, resulting in disjointed editorial judgment and inconsistent post generation.
 
 By generating the profile *exactly once* during agent initialization and persisting it in the repository, the engine guarantees that subsequent reads (e.g. status requests or feed queries) interact with the exact same stable persona.
 
 ### Persona Profile Structure
-The profile is represented by the [PersonaProfile](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/schemas/persona.py) Pydantic model and includes:
+
+The profile is represented by the [PersonaProfile](<file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/schemas/persona.py>) Pydantic model and includes:
+
 * **Identity**: A short description of the AI identity (e.g., AI Security researcher, ML engineer).
 * **Mission**: A concise explanation of what the persona analyzes or explains.
 * **Core Interests**: A list of specific technology sub-fields (e.g., MLOps, model vulnerabilities).
@@ -72,6 +76,7 @@ The profile is represented by the [PersonaProfile](file:///c:/Users/mohdh/Deskto
 * **Topics to Avoid**: Categories to filter out (e.g., political content unrelated to AI/tech, unsupported rumors).
 
 ### Information Flow
+
 ```text
   [POST /api/agent/init]
            │
@@ -87,6 +92,7 @@ The profile is represented by the [PersonaProfile](file:///c:/Users/mohdh/Deskto
 ```
 
 When an agent is initialized:
+
 1. The client sends the name and domain via `POST /api/agent/init`.
 2. `AgentService` validates inputs and delegates generation to `PersonaService`.
 3. `PersonaService` deterministically generates a custom `PersonaProfile` (either from rich predefined technology templates or via a dynamic fallback generator for custom domains).
@@ -100,13 +106,16 @@ When an agent is initialized:
 The **Topic Discovery Service** is a core reusable component introduced in Milestone 4. It enables the agent to independently aggregate and normalize tech and AI developments from live information sources.
 
 ### Discovery vs. Editorial Judgment
+
 It is critical to distinguish between these two layers:
+
 * **Topic Discovery**: Responsible only for answering the question *"What potentially relevant developments are available right now?"* It retrieves, parses, normalizes, and technically deduplicates topics.
-* **Editorial Judgment**: (Planned for a future milestone) Evaluates the suitability of discovered topics against the stable persona rules (e.g. principles, interests, topics to avoid). 
+* **Editorial Judgment**: (Planned for a future milestone) Evaluates the suitability of discovered topics against the stable persona rules (e.g. principles, interests, topics to avoid).
 
 The Topic Discovery Service does **NOT** make any publishing or scheduling decisions.
 
 ### Architecture and Data Flow
+
 ```text
   Configured RSS/Atom Feeds (TechCrunch AI, NVIDIA Developer, AWS ML, MIT Tech Review)
                                   │
@@ -135,13 +144,16 @@ The Topic Discovery Service does **NOT** make any publishing or scheduling decis
 ```
 
 ### Configured Sources
+
 We start with four highly reputable technology and AI blogs, configured dynamically via environment variables (`DISCOVERY_FEEDS`) with robust fallback defaults:
+
 1. **TechCrunch AI category**: Tracks high-level technology industry news and venture activity.
 2. **NVIDIA Developer Blog**: Captures technical updates, hardware accelerators, and frameworks.
 3. **AWS Machine Learning Blog**: Covers cloud infrastructure and enterprise deployment patterns.
 4. **MIT Technology Review (AI Feed)**: Offers strong editorial analysis, policy, and research developments.
 
 ### Error Handling & Failure Isolation
+
 To ensure high availability, the discovery service isolates source failures. If one feed experiences a connection timeout, DNS failure, or returns a 500 error, it is logged, but the discovery process **continues** processing candidates from all other healthy feeds.
 
 ---
@@ -151,11 +163,14 @@ To ensure high availability, the discovery service isolates source failures. If 
 The **Editorial Judgment Engine** is a core reusable subsystem introduced in Milestone 5. It evaluates candidate topics against the agent's persistent `PersonaProfile` (interests, domain, principles, avoided topics) and decides whether to accept or reject them.
 
 ### Discovery vs. Editorial Judgment
+
 * **Topic Discovery**: Answers the question *"What is happening in the industry?"* and collects all candidates.
 * **Editorial Judgment**: Answers the question *"Is this candidate worth publishing for this specific persona?"* and filters candidates.
 
 ### Scoring Criteria and Methodology
+
 A candidate is evaluated on a `0.0` to `10.0` scale using five criteria:
+
 1. **Relevance / Persona Fit** (`relevanceScore`): Determines if candidate matches `core_interests` (adds 2.5 per match). Set to `0.0` immediately if it matches `topics_to_avoid`. Minimum of `5.0` required for acceptance.
 2. **Freshness** (`freshnessScore`): Penalizes old content. Published within 24 hours = `10.0`, <= 3 days = `8.0`, <= 7 days = `5.0`, stale (> 7 days) = `2.0`. Minimum of `5.0` required for acceptance.
 3. **Significance** (`significanceScore`): Evaluates technological impact. Technical keywords (e.g. breakthrough, zero-day) increase score; promotional keywords (e.g. coupon, discount, register) reduce score.
@@ -163,17 +178,26 @@ A candidate is evaluated on a `0.0` to `10.0` scale using five criteria:
 5. **Editorial Alignment** (`personaFitScore`): Overall fit for target audience and style guidelines. Penalizes generic hype terms (e.g. game changer, mind-blowing) by `-2.0` to filter out clickbait.
 
 The overall score is computed as:
-$$\text{Score} = \frac{\text{Relevance} + \text{Significance} + \text{Freshness} + \text{Source Quality} + \text{Persona Fit}}{5}$$
+
+$$
+\text{Score} = \frac{\text{Relevance} + \text{Significance} + \text{Freshness} + \text{Source Quality} + \text{Persona Fit}}{5}
+$$
 
 A topic candidate is only accepted if:
-$$\text{Score} \ge \text{Threshold (6.0)} \quad \text{AND} \quad \text{Relevance} \ge 5.0 \quad \text{AND} \quad \text{Freshness} \ge 5.0$$
+
+$$
+\text{Score} \ge \text{Threshold (6.0)} \quad \text{AND} \quad \text{Relevance} \ge 5.0 \quad \text{AND} \quad \text{Freshness} \ge 5.0
+$$
 
 ### Decision Explanation
+
 Every decision contains explainable, context-specific reasons:
+
 * **ACCEPT**: Explains which core interests matched and why the content is timely/significant.
 * **REJECT**: Explains why it failed (low relevance, stale content, clickbait warning, or matches avoided topics like politics).
 
 ### Dual Engine Abstraction
+
 * **Deterministic Engine**: Runs rule-based scoring matching interest keywords. Fast, free of external dependencies, and suitable for tests.
 * **LLM Engine**: Delegates structured JSON evaluation to `BaseLLMClient`. Validates schema structure. If LLM timeouts or malformed outputs occur, it fails safely with an explicit `REJECT` decision and 0.0 score.
 
@@ -203,10 +227,13 @@ Foundation ──► Agent API ──► Persona ──► Topic Discovery ─�
 ```
 
 ### Decoupled Storage Backend
+
 The repository follows a clean abstraction interface (`BaseMemory`) and is implemented as a local file-based repository `LocalFileMemoryRepository`. The rest of the application interacts with memories solely through the `MemoryService`, leaving the underlying storage implementation easily replaceable (e.g. migrating to an external provider like Breeth in later stages requires zero core logic rewrites).
 
 ### Memory Schema & Categories
+
 Memory is strictly isolated per `agentId` and serialized into a structured `AgentMemory` schema mapping:
+
 * `memoryId`: unique entry UUID.
 * `agentId`: unique owner agent UUID.
 * `type`: Literal value representing:
@@ -217,7 +244,9 @@ Memory is strictly isolated per `agentId` and serialized into a structured `Agen
 * `metadata`: Contextual keys (e.g. `topicId`, `sourceUrl`, `editorialDecision`, `publishedAt`).
 
 ### Token Overlap Duplicate Detection
+
 To support future autonomous flows and prevent duplicate post publishing, the memory service provides `is_repetitive(agent_id, content)` capability:
+
 1. It splits check content and stored memory content into lowercased tokens.
 2. It filters out noise/stop-words (e.g. "the", "and", "in", "new", "discovered").
 3. It computes the keyword overlap ratio between the check tokens and stored tokens. If the overlap is `>= 60%`, the topic is recognized as repetitive, preventing the agent from publishing identical stories with slightly different headlines.
@@ -254,16 +283,20 @@ Topic Discovery ──► Memory Context ──► Editorial Judgment ──► 
 ```
 
 ### Decoupled Provider Strategy
+
 Like the editorial judgment layer, the content generator abstracts the LLM API calls behind the `BaseLLMClient` interface. The rest of the application remains isolated from the underlying LLM provider, ensuring that migrating between different cloud LLM services (Gemini, Claude, GPT) is seamless and requires zero service logic changes.
 
 ### Prompt Engineering Directives
+
 The generator constructs a rich structured prompt that guides the LLM to:
+
 1. **Persona Alignment**: Restrict topics to the agent's configured `domain` (e.g. AI Security or Robotics) and write with the defined `tone` (e.g. Analytical and skeptical).
 2. **Technical Depth & Voice**: Adopt the technical depth of an industry professional, avoiding generic hype phrases ("mind-blowing", "game changer", "revolutionary") and excessive emojis/hashtags.
 3. **Grounding & Honesty**: Use only the verified findings, facts, and figures from the candidate topic. Unsubstantiated claims are strictly prohibited.
 4. **Historical Continuity**: Incorporate the agent's recent memory list to maintain consistency and prevent repetitive headlines.
 
 ### Hard Gating & Quality Controls
+
 * **Blocked Rejects**: Trying to write a post for an editorially rejected topic candidate raises a `ValueError` automatically.
 * **Preservation of Rationale & Sources**: Generated posts must retain the source URLs and the selection rationale from the editorial judgment decision.
 * **Integrity Validation**: Verifies that post text is non-empty and generates unique tracking IDs and timezone-aware UTC timestamps.
@@ -304,15 +337,19 @@ The **Autonomous Execution Loop & Scheduling** layer is a core pipeline componen
 ```
 
 ### Agent Lifecycle States
+
 Each agent transitions through distinct states managed centrally in repository metadata:
+
 * **`INITIALIZED`**: Agent profile and stable persona generated. Scheduler loop is not yet running.
 * **`RUNNING`**: The scheduled asyncio background task is active and triggering runs.
 * **`PAUSED`**: The scheduled loops have been cancelled or stopped cleanly.
 
 ### Concurrency Lock Guards
+
 To prevent duplicate cycle tasks from overlapping on slow API responses, an in-memory lock (`_active_runs` set) blocks starting a new execution cycle for an agent if one is already in progress.
 
 ### Scheduling & Graceful Resiliency
+
 * **FastAPI Lifespan Bind**: Background loops use standard `asyncio.create_task` tasks. Loops are cleanly shut down via `lifespan` application hooks during server teardowns.
 * **Error Isolation**: Failures in RSS parsers, memory files, or LLM providers are caught inside the cycle loop, updating cycle status to `FAILED` and logging results cleanly without breaking the background loop scheduling process.
 
@@ -379,6 +416,7 @@ autonomous-ai-creator/
 ## API Endpoints
 
 ### 1. Health Check
+
 * **Route**: `GET /health`
 * **Response**:
   ```json
@@ -390,6 +428,7 @@ autonomous-ai-creator/
   ```
 
 ### 2. Initialize Agent
+
 * **Route**: `POST /api/agent/init`
 * **Headers**: `Content-Type: application/json`
 * **Request Body**:
@@ -413,6 +452,7 @@ autonomous-ai-creator/
   - Whitespace-only values will fail validation with a `422 Unprocessable Entity` status code.
 
 ### 3. Agent Feed
+
 * **Route**: `GET /api/agent/feed?agentId=<id>`
 * **Response Body (Success)**:
   ```json
@@ -422,6 +462,7 @@ autonomous-ai-creator/
   ```
 * **Response Body (Non-Existent Agent)**:
   - If the `agentId` does not match an initialized agent, returns `404 Not Found`:
+
   ```json
   {
     "detail": "Agent with ID 'nonexistent-id' does not exist."
@@ -433,9 +474,11 @@ autonomous-ai-creator/
 ## Setup & Local Installation
 
 ### Prerequisites
+
 * Python 3.14.6 (or Python 3.10+)
 
 ### 1. Initialize Virtual Environment
+
 Create and activate your Python virtual environment:
 
 ```bash
@@ -450,6 +493,7 @@ source .venv/bin/activate
 ```
 
 ### 2. Install Dependencies
+
 Install production and testing dependencies:
 
 ```bash
@@ -457,6 +501,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. Environment Configuration
+
 Copy the configuration template:
 
 ```bash
@@ -487,21 +532,36 @@ pytest
 
 ---
 
+## Autonomous Reliability & Failure Recovery
+
+The background loop scheduler runs continuously, designed to isolate failures and recover gracefully without corrupting state or publishing invalid content:
+
+* **Graceful Loop Isolation**: Failures during a specific cycle (e.g. DNS timeout, disk full, generation failure) are isolated using strict try-except boundaries. They fail the active cycle safely, logging details, but leave the scheduler active for subsequent cycles.
+* **Topic Discovery Retries**: A bounded 3x retry policy is implemented for transient HTTP and connection failures when scraping configured RSS sources, avoiding permanent parser failures.
+* **Safe Repetition Gates**: If agent persistent memory checks fail (e.g. due to JSON corruption or locks), the system conservatively treats the topic as repetitive to prevent duplicate publishing.
+* **Write Ordering Prioritization**: The system persists post metadata to memory *before* publishing to the feed. If memory serialization fails, publishing is aborted to prevent untracked/duplicate content.
+* **Validation Safeguards**: Malformed generator outputs are blocked by strict validation gates, raising errors to flag structural or rationale content issues before feed exposure.
+
+---
+
 ## Current Limitations & Unimplemented Features
+
 The following features are **NOT** implemented yet:
+
 - **External Memory Service**: External cloud-based memory layers (like Breeth) are not integrated yet.
 
 ---
 
 ## Milestone Roadmaps & Future Integrations
 
-- [x] **Milestone 1**: Project foundation, configuration management, memory abstraction interface, and health verification.
-- [x] **Milestone 2**: API Contract & Agent Initialization State (In-Memory).
-- [x] **Milestone 3**: Persona Engine implementation for stable AI technology identities.
-- [x] **Milestone 4**: Live AI Topic Discovery layer with unified RSS/Atom adapters.
-- [x] **Milestone 5**: Editorial Judgment Engine for persona-aware filter control.
-- [x] **Milestone 6**: Persistent Agent Memory layer with local JSON file repositories and repetition checks.
-- [x] **Milestone 7**: Autonomous Content Generation converting accepted topics into persona-consistent social-media posts.
-- [x] **Milestone 8**: Autonomous Execution Loop and Scheduling for continuous loop operations.
-- [x] **Milestone 9**: Autonomous Publishing & Feed Integration.
-- [ ] **Milestone 10**: Memory integration via external memory provider Breeth.
+- [X] **Milestone 1**: Project foundation, configuration management, memory abstraction interface, and health verification.
+- [X] **Milestone 2**: API Contract & Agent Initialization State (In-Memory).
+- [X] **Milestone 3**: Persona Engine implementation for stable AI technology identities.
+- [X] **Milestone 4**: Live AI Topic Discovery layer with unified RSS/Atom adapters.
+- [X] **Milestone 5**: Editorial Judgment Engine for persona-aware filter control.
+- [X] **Milestone 6**: Persistent Agent Memory layer with local JSON file repositories and repetition checks.
+- [X] **Milestone 7**: Autonomous Content Generation converting accepted topics into persona-consistent social-media posts.
+- [X] **Milestone 8**: Autonomous Execution Loop and Scheduling for continuous loop operations.
+- [X] **Milestone 9**: Autonomous Publishing & Feed Integration.
+- [X] **Milestone 10**: Autonomous Reliability & Failure Recovery.
+- [ ] **Milestone 11**: Memory integration via external memory provider Breeth.

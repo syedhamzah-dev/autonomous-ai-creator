@@ -267,9 +267,9 @@ class TopicDiscoveryService:
     Service responsible for triggering feed discovery, combining candidates,
     normalizing URLs, generating stable UUIDs, and filtering duplicate topics.
     """
-    def __init__(self, feed_urls: Optional[List[str]] = None, timeout: float = 10.0) -> None:
+    def __init__(self, feed_urls: Optional[List[str]] = None, timeout: Optional[float] = None) -> None:
         self.feed_urls = feed_urls if feed_urls is not None else settings.discovery_feeds
-        self.timeout = timeout
+        self.timeout = timeout if timeout is not None else settings.discovery_timeout_seconds
 
     async def discover_topics(self, persona: Optional[PersonaProfile] = None) -> List[TopicCandidate]:
         """
@@ -290,7 +290,21 @@ class TopicDiscoveryService:
                 logger.info(f"Starting discovery on source feed: {url}")
                 adapter = RSSAtomAdapter(url)
                 try:
-                    feed_candidates = await adapter.fetch_and_parse(client)
+                    # Bounded 3x retry policy for transient HTTP/request/timeout errors (RuntimeError)
+                    max_retries = 3
+                    feed_candidates = []
+                    import asyncio
+                    for attempt in range(max_retries):
+                        try:
+                            feed_candidates = await adapter.fetch_and_parse(client)
+                            break
+                        except (httpx.RequestError, httpx.HTTPStatusError, RuntimeError) as e:
+                            # ValueError (parsing errors) is not caught here, avoiding retrying permanent malformed responses
+                            if attempt == max_retries - 1:
+                                raise
+                            logger.warning(f"[RETRY] Attempt {attempt + 1} failed for source '{url}': {e}. Retrying in 0.5 seconds...")
+                            await asyncio.sleep(0.5)
+
                     logger.info(f"Successfully processed source '{url}'. Received {len(feed_candidates)} items.")
                     
                     for candidate in feed_candidates:

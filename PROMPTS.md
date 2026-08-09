@@ -2758,4 +2758,44 @@ Instructs the agent to:
 5. **Deterministic Testing**: Created `tests/test_milestone9.py` checking all 12 validation and lifecycle rules.
 6. **48-Hour Simulation**: Built `scripts/simulate_48h_evaluation.py` simulating 48 cycles of discovery, evaluation, deduplication, and feed retrieval.
 
+---
+
+## Milestone 10 — Autonomous Reliability & Failure Recovery
+
+### Objective
+
+Introduce local fault isolation and self-recovery capabilities to guarantee the continuous running of the autonomous loop under component failures, prevent duplicate publishing, enforce write order priorities, and configure custom timeouts.
+
+### Role Given to the Coding Agent
+
+Senior Site Reliability Engineer, Backend Engineer, Autonomous AI Systems Engineer, QA Engineer, and Hackathon Evaluator.
+
+### Prompt
+
+```text
+# MILESTONE 10 — AUTONOMOUS RELIABILITY & FAILURE RECOVERY
+
+Act as a Senior Site Reliability Engineer, Backend Engineer, Autonomous AI Systems Engineer, QA Engineer, and Hackathon Evaluator.
+The primary objective is to make the autonomous agent resilient enough to continue operating when individual components fail.
+```
+
+### What This Prompt Does
+
+Instructs the agent to:
+1. Isolate errors at the individual feed discovery, editorial, generation, and publishing levels.
+2. Implement custom timeout and bounded 3x retries for scraping RSS/Atom sources.
+3. Enforce write ordering prioritizations (memory storage before publishing feed).
+4. Guard duplication checks defensively (treat memory failure as duplicate).
+5. Create comprehensive tests checking 10 specific failure recovery scenarios and run a sequential 7-cycle simulation.
+
+### Development Outcome
+
+1. **Centralized Configuration**: Configured `discovery_timeout_seconds` in `Settings` defaulting to `10.0` seconds.
+2. **Topic Discovery Isolation**: Modified `TopicDiscoveryService.discover_topics` with a bounded 3x retry loop catching network errors with a 0.5s delay.
+3. **Autonomous Step Isolation & Priorities**: Added try-except boundaries to `is_repetitive` checks, evaluating decisions, generating content, and saving to the feed.
+4. **Memory Guard Priority**: Swapped write sequence ordering: saves to agent memory first, then saves to feed second. Treats memory check error as duplicate for maximum safety.
+5. **Robust Test Suite**: Created `tests/test_milestone10.py` checking all 10 failure isolation and loop recovery scenarios (all green).
+6. **Reliability Simulation**: Implemented `scripts/simulate_reliability_recovery.py` simulating success, failures, rejections, and recovery cycles successfully.
+
+
 

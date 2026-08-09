@@ -63,7 +63,8 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M6** | Persistent Agent Memory | Local persistent agent-scoped memory & repetition checks | `c20c589a803890afdbb4741ceddd54e91722bec7`<br>`feat: add persistent agent memory` |
 | **M7** | Content Generation | Persona-consistent post text grounded in sources | `bdb265a657579875c1e27216423394c18deb45a7`<br>`feat: add autonomous content generation` |
 | **M8** | Scheduling Loop | Periodic autonomous cycle execution, states, locks, failure resilience | `9b6825f30322219804d38dafca4eaf810894f278`<br>`feat: add autonomous execution loop` |
-| **M9** | Autonomous Publishing | Connected background loops to the evaluator feed API, validation, sorting | `feat: implement autonomous publishing feed` |
+| **M9** | Autonomous Publishing | Connected background loops to the evaluator feed API, validation, sorting | `0e9c784`<br>`feat: implement autonomous publishing feed` |
+| **M10** | Autonomous Reliability | Safe fault-isolation, bounded retries, priority writing, and recovery | `feat: improve autonomous reliability and recovery` |
 
 ---
 
@@ -4060,7 +4061,65 @@ Milestone 9 autonomous publishing feed layer fully implemented, validated, and v
 
 ### Git
 
+`0e9c784`
+
 `feat: implement autonomous publishing feed`
+
+---
+
+## M10 · Autonomous Reliability & Failure Recovery
+
+**Status:** Complete  
+**Focus:** Implement local failure isolation boundaries, retries, and self-healing loops  
+**Commit:** `feat: improve autonomous reliability and recovery`  
+**Date:** 2026-08-09  
+
+### Objective
+
+Establish autonomous loops that isolate errors across RSS topic discovery, editorial filters, generation engines, and publishing repositories. Enable continuous scheduler execution without crashing, duplicate-preventing priority writes, and configurable timeout limits.
+
+### Prompt
+
+```text
+# MILESTONE 10 — AUTONOMOUS RELIABILITY & FAILURE RECOVERY
+
+Act as a Senior Site Reliability Engineer, Backend Engineer, Autonomous AI Systems Engineer, QA Engineer, and Hackathon Evaluator.
+The primary objective is to make the autonomous agent resilient enough to continue operating when individual components fail.
+```
+
+### What the Prompt Does
+
+Instructs the agent to isolate exceptions at service execution boundaries, configure custom timeouts with 3x retry policies, sequence memory writes before feed publishing to prevent duplicates, and run unit tests + simulations checking self-recovery capabilities.
+
+### Implementation
+
+*   **Configurable Timeouts**: Added `discovery_timeout_seconds` inside Settings class (defaulting to 10.0s).
+*   **Discovery Retries**: Added a bounded 3x retry mechanism in `TopicDiscoveryService.discover_topics` for scraping feeds.
+*   **Error Isolation**: Added explicit try-except clauses around memory check queries, editorial ratings, model content generations, and repository publishing.
+*   **Write Sequencing Order**: Reordered cycle completion step: first persists metadata to memory repository, then stores it to the feed. Prevents duplicate publishing if memory fails.
+*   **Test Suite**: Created `tests/test_milestone10.py` checking all 9 specific failure/recovery scenarios.
+*   **Long-Run Simulation**: Implemented `scripts/simulate_reliability_recovery.py` representing a 7-cycle workflow (success, rejection, discovery timeout, content failure, recovery, duplicate, success).
+
+### Technical Decisions
+
+*   **Treat Memory Failures defensively**: If memory repetition lookup raises an error, candidate is automatically marked as duplicate to prevent duplicate feed posts.
+*   **Abort Feed Writes on Memory Failure**: If storing post memory fails, the cycle is aborted immediately before save_published_post, preventing duplicate posts on retry.
+
+### Testing
+
+*   All 74 unit, integration, and recovery tests passed green.
+
+### Verification
+
+*   Sequential 7-cycle simulation script executes successfully with status SUCCESS / FAILED outputs as expected.
+
+### Outcome
+
+Milestone 10 reliability, self-healing scheduling loop, isolation boundaries, and validation controls fully implemented.
+
+### Limitations
+
+*   Centralized memory provider Breeth cloud storage is not implemented yet.
 
 ---
 
@@ -4093,8 +4152,11 @@ Milestone 9 autonomous publishing feed layer fully implemented, validated, and v
  │                                         │
  │                                         └──── M9 ── Autonomous Publishing & Feed Integration
  │                                               │     Aug 09, 2026
- │                                               ▼
- │                                             [Current State]
+ │                                               │
+ │                                               └──── M10 ── Autonomous Reliability & Failure Recovery
+ │                                                     │     Aug 09, 2026
+ │                                                     ▼
+ │                                                   [Current State]
 ```
 
 ---
@@ -4127,6 +4189,7 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Autonomous Content Generation**: Generates high-quality, grounded, persona-consistent social-media posts from accepted topics.
 * **Autonomous Execution Loop & Scheduling**: Background periodic execution cycles, state transitions, concurrency locking, and draft storages.
 * **Autonomous Publishing Feed**: Connected loop cycles directly to the queryable feed API, sorted newest-first, and secured by multi-constraint post validations.
+* **Autonomous Reliability & Recovery**: Failure isolation boundaries, configurable timeouts, bounded topic discovery retries, and defensive duplication prevention.
 
 ### Intentionally Not Yet Implemented
 

@@ -139,9 +139,15 @@ class AutonomousExecutionService:
             # Step 2: Duplication check and Editorial Evaluation
             for candidate in candidates:
                 # Deduplication: query memory repository
-                is_duplicate = await self.memory_service.is_repetitive(
-                    agent_id, candidate.title, source_url=candidate.sourceUrl
-                )
+                try:
+                    is_duplicate = await self.memory_service.is_repetitive(
+                        agent_id, candidate.title, source_url=candidate.sourceUrl
+                    )
+                except Exception as mem_err:
+                    # Safest duplication prevention: treat as duplicate if memory check fails
+                    logger.error(f"[MEMORY_FAILURE] Repetition check failed for '{candidate.title}': {mem_err}. Treating as duplicate for safety.", exc_info=True)
+                    is_duplicate = True
+
                 if is_duplicate:
                     result["rejectedCount"] += 1
                     logger.info(f"[TOPIC_REJECTED] Rejected candidate '{candidate.title}' (Reason: Repetitive / covered in memory).")
@@ -152,6 +158,12 @@ class AutonomousExecutionService:
                     decision = await self.editorial_service.evaluate_candidate(persona, candidate)
                 except Exception as eval_err:
                     logger.error(f"Editorial scoring error for candidate '{candidate.title}': {eval_err}")
+                    continue
+
+                # Enforce editorial judgment validation gate
+                if not decision or decision.decision not in ("ACCEPT", "REJECT"):
+                    logger.warning(f"Editorial judgment returned invalid decision format for '{candidate.title}'. Safely treating as REJECT.")
+                    result["rejectedCount"] += 1
                     continue
 
                 if decision.decision == "REJECT":
@@ -173,7 +185,10 @@ class AutonomousExecutionService:
                             "score": decision.score
                         }
                     )
-                    await self.memory_service.store(agent_id, reject_memory)
+                    try:
+                        await self.memory_service.store(agent_id, reject_memory)
+                    except Exception as store_reject_err:
+                        logger.warning(f"[MEMORY_FAILURE] Failed to store rejection memory for '{candidate.title}': {store_reject_err}")
                     continue
 
                 if decision.decision == "ACCEPT":
@@ -186,28 +201,22 @@ class AutonomousExecutionService:
 
             # Step 3: Content Generation (only if accepted topic exists)
             if accepted_candidate and accepted_decision:
-                logger.info(f"Generating post content for accepted candidate: '{accepted_candidate.title}'")
-                post = await self.generator_service.generate_post(
-                    agent_id=agent_id,
-                    persona=persona,
-                    candidate=accepted_candidate,
-                    decision=accepted_decision
-                )
+                try:
+                    logger.info(f"Generating post content for accepted candidate: '{accepted_candidate.title}'")
+                    post = await self.generator_service.generate_post(
+                        agent_id=agent_id,
+                        persona=persona,
+                        candidate=accepted_candidate,
+                        decision=accepted_decision
+                    )
+                except Exception as gen_err:
+                    logger.error(f"[GENERATION_FAILURE] Content generation failed for candidate '{accepted_candidate.title}': {gen_err}", exc_info=True)
+                    raise RuntimeError(f"Content generation failed: {gen_err}") from gen_err
+
                 logger.info(f"[CONTENT_GENERATED] Produced generated post: ID {post.id}")
                 result["preparedPostId"] = post.id
 
-                # Save generated post to internal repository state as draft/prepared post (not exposed to feed)
-                self.agent_repo.save_prepared_post(agent_id, post.model_dump(by_alias=True))
-
-                # Validate and publish the post to the evaluator-facing feed
-                existing_posts = self.agent_repo.get_agent_posts(agent_id) or []
-                if validate_post_to_publish(post, agent_id, existing_posts):
-                    self.agent_repo.save_published_post(agent_id, post.model_dump(by_alias=True))
-                    logger.info(f"[CONTENT_PUBLISHED] Successfully validated and published post {post.id} to agent feed.")
-                else:
-                    logger.warning(f"[POST_VALIDATION_FAILED] Generated post {post.id} is invalid and will not be published.")
-
-                # Store post in Persistent memory to prevent future cycles from repeating this topic
+                # Prepare memory structures
                 post_memory = AgentMemory(
                     memoryId=post.id,
                     agentId=agent_id,
@@ -220,9 +229,6 @@ class AutonomousExecutionService:
                         "rationale": post.rationale
                     }
                 )
-                await self.memory_service.store(agent_id, post_memory)
-
-                # Store topic candidate reference metadata in persistent memory
                 topic_memory = AgentMemory(
                     memoryId=str(uuid.uuid4()),
                     agentId=agent_id,
@@ -235,9 +241,6 @@ class AutonomousExecutionService:
                         "publishedAt": accepted_candidate.publishedAt.isoformat()
                     }
                 )
-                await self.memory_service.store(agent_id, topic_memory)
-
-                # Store the ACCEPT decision in persistent memory
                 accept_dec_memory = AgentMemory(
                     memoryId=str(uuid.uuid4()),
                     agentId=agent_id,
@@ -252,7 +255,35 @@ class AutonomousExecutionService:
                         "score": accepted_decision.score
                     }
                 )
-                await self.memory_service.store(agent_id, accept_dec_memory)
+
+                # Store post in Persistent memory FIRST (deduplication priority check)
+                try:
+                    await self.memory_service.store(agent_id, post_memory)
+                    await self.memory_service.store(agent_id, topic_memory)
+                    await self.memory_service.store(agent_id, accept_dec_memory)
+                except Exception as store_mem_err:
+                    logger.error(f"[MEMORY_FAILURE] Failed to store published post metadata in memory for agent {agent_id}: {store_mem_err}", exc_info=True)
+                    # Abort before publishing to feed to prevent duplicate retry anomalies
+                    raise RuntimeError(f"Memory persistence failed: {store_mem_err}") from store_mem_err
+
+                # Save generated post to internal repository state as draft/prepared post
+                try:
+                    self.agent_repo.save_prepared_post(agent_id, post.model_dump(by_alias=True))
+                except Exception as draft_err:
+                    logger.warning(f"[REPOSITORY_WARNING] Failed to save prepared draft post: {draft_err}")
+
+                # Validate and publish the post to the evaluator-facing feed SECOND
+                existing_posts = self.agent_repo.get_agent_posts(agent_id) or []
+                if validate_post_to_publish(post, agent_id, existing_posts):
+                    try:
+                        self.agent_repo.save_published_post(agent_id, post.model_dump(by_alias=True))
+                        logger.info(f"[CONTENT_PUBLISHED] Successfully validated and published post {post.id} to agent feed.")
+                    except Exception as pub_err:
+                        logger.error(f"[PUBLISHING_FAILURE] Feed persistence failed for post {post.id}: {pub_err}", exc_info=True)
+                        raise RuntimeError(f"Feed persistence failed: {pub_err}") from pub_err
+                else:
+                    logger.error(f"[POST_VALIDATION_FAILED] Generated post {post.id} failed validation constraints. Post was blocked from the feed.")
+                    raise ValueError(f"Post {post.id} failed validation constraints.")
 
             result["status"] = "SUCCESS"
             logger.info(f"[CYCLE_COMPLETED] Cycle completed successfully. Cycle ID: {cycle_id}")

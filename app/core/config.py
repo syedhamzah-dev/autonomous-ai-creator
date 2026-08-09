@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     autonomous_enabled: bool = Field(default=True, validation_alias="AUTONOMOUS_ENABLED")
     autonomous_interval_seconds: float = Field(default=3600.0, validation_alias="AUTONOMOUS_INTERVAL_SECONDS")
 
+    # Discovery Timeout Settings
+    discovery_timeout_seconds: float = Field(default=10.0, validation_alias="DISCOVERY_TIMEOUT_SECONDS")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
