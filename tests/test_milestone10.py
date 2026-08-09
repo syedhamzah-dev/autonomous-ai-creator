@@ -326,3 +326,21 @@ def test_agent_isolation_m10(test_client):
     
     assert feed_a.status_code == 200
     assert feed_b.status_code == 200
+
+def test_agent_status_endpoint_m11(test_client):
+    # Initialize Agent
+    res = test_client.post("/api/agent/init", json={"persona": {"name": "StatusAgent", "domain": "Tech"}})
+    agent_id = res.json()["agentId"]
+    
+    # Query status endpoint
+    status_res = test_client.get(f"/api/agent/status?agentId={agent_id}")
+    assert status_res.status_code == 200
+    data = status_res.json()
+    assert data["agentId"] == agent_id
+    assert data["status"] == "active"
+    assert data["persona"]["name"] == "StatusAgent"
+    assert data["postsCount"] == 0
+
+    # Query status for non-existent agent should fail with 404
+    status_fail = test_client.get("/api/agent/status?agentId=invalid-id-123")
+    assert status_fail.status_code == 404

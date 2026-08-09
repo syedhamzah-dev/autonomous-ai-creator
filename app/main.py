@@ -20,3 +20,14 @@ app = FastAPI(
 
 # Register API Router
 app.include_router(api_router)
+
+# Mount Static Files for the Evaluator UI Dashboard
+import os
+from fastapi.staticfiles import StaticFiles
+
+static_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+if not os.path.exists(static_path):
+    os.makedirs(static_path)
+
+app.mount("/", StaticFiles(directory=static_path, html=True), name="static")
+

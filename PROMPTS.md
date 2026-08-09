@@ -2797,5 +2797,45 @@ Instructs the agent to:
 5. **Robust Test Suite**: Created `tests/test_milestone10.py` checking all 10 failure isolation and loop recovery scenarios (all green).
 6. **Reliability Simulation**: Implemented `scripts/simulate_reliability_recovery.py` simulating success, failures, rejections, and recovery cycles successfully.
 
+---
+
+## Milestone 11 — Evaluator UI/UX & Final Documentation Polish
+
+### Objective
+
+Build a simple, responsive evaluator-facing UI dashboard for observing the autonomous agent, and polish the repository documentation (Mermaid diagrams, workflow descriptions, API endpoints, setup guides) for clear hackathon evaluation.
+
+### Role Given to the Coding Agent
+
+Senior Product Designer, UI/UX Engineer, Frontend Engineer, Technical Writer, GitHub Documentation Specialist, and Hackathon Evaluator.
+
+### Prompt
+
+```text
+# MILESTONE 11 — EVALUATOR UI/UX + FINAL DOCUMENTATION POLISH
+
+Act as a Senior Product Designer, UI/UX Engineer, Frontend Engineer, Technical Writer, GitHub Documentation Specialist, and Hackathon Evaluator.
+This milestone has TWO goals:
+1. Create a simple, polished evaluator-facing UI.
+2. Redesign and correct the GitHub-facing documentation so that the project is immediately understandable and visually appealing.
+```
+
+### What This Prompt Does
+
+Instructs the agent to:
+1. Implement a single-page observer UI containing status badges, active agent metadata cards, static pipeline stages, theme toggling, and polling feeds.
+2. Mount the static folder at `/` and introduce a `/status` backend endpoint for UI consumption.
+3. Rewrite `README.md` to resolve Mermaid rendering bugs, add a simplified flow diagram, list core workflows and API specs, and add a screenshot.
+4. Update developer logs synchronously.
+
+### Development Outcome
+
+1. **Evaluator UI Dashboard**: Developed `app/static/index.html` using a premium, dark/light theme toggle, polling live feeds chronologically, showing agent status, and visualization pipelines.
+2. **FastAPI Static Mount**: Added `app.mount("/", StaticFiles(...))` in `app/main.py` to serve the static dashboard page.
+3. **Status Endpoint**: Added `/api/agent/status` to `app/api/endpoints/agent.py` to allow the frontend to retrieve active persona configuration parameters upon page reloads.
+4. **Unit Verification**: Appended status endpoint assertions in `tests/test_milestone10.py`.
+5. **Documentation Overhaul**: Redesigned `README.md` with concise status tables, workflow definitions, API schema blocks, and a screenshot `docs/images/dashboard.png` taken dynamically via browser tests.
+
+
 
 

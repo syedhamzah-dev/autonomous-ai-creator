@@ -64,7 +64,8 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M7** | Content Generation | Persona-consistent post text grounded in sources | `bdb265a657579875c1e27216423394c18deb45a7`<br>`feat: add autonomous content generation` |
 | **M8** | Scheduling Loop | Periodic autonomous cycle execution, states, locks, failure resilience | `9b6825f30322219804d38dafca4eaf810894f278`<br>`feat: add autonomous execution loop` |
 | **M9** | Autonomous Publishing | Connected background loops to the evaluator feed API, validation, sorting | `0e9c784`<br>`feat: implement autonomous publishing feed` |
-| **M10** | Autonomous Reliability | Safe fault-isolation, bounded retries, priority writing, and recovery | `feat: improve autonomous reliability and recovery` |
+| **M10** | Autonomous Reliability | Safe fault-isolation, bounded retries, priority writing, and recovery | `0f04749`<br>`feat: improve autonomous reliability and recovery` |
+| **M11** | Evaluator UI & Polish | Polished observer dashboard, theme toggles, Mermaid diagram fixes | `feat: add evaluator dashboard and polish documentation` |
 
 ---
 
@@ -4123,6 +4124,65 @@ Milestone 10 reliability, self-healing scheduling loop, isolation boundaries, an
 
 ---
 
+## M11 · Evaluator UI/UX & Final Documentation Polish
+
+**Status:** Complete  
+**Focus:** Build an observer dashboard and rewrite README.md for judge evaluation  
+**Commit:** `feat: add evaluator dashboard and polish documentation`  
+**Date:** 2026-08-09  
+
+### Objective
+
+Build a simple, responsive, observer-only frontend dashboard to allow hackathon judges to verify agent execution states and read the published feed. Fix currently broken Markdown Mermaid flowchart syntax in the GitHub README and structure documentation for instant comprehensibility.
+
+### Prompt
+
+```text
+# MILESTONE 11 — EVALUATOR UI/UX + FINAL DOCUMENTATION POLISH
+
+Act as a Senior Product Designer, UI/UX Engineer, Frontend Engineer, Technical Writer, GitHub Documentation Specialist, and Hackathon Evaluator.
+This milestone has TWO goals:
+1. Create a simple, polished evaluator-facing UI.
+2. Redesign and correct the GitHub-facing documentation so that the project is immediately understandable and visually appealing.
+```
+
+### What the Prompt Does
+
+Instructs the agent to create a single-page HTML/CSS/JS dashboard containing metrics cards, static pipeline stages, dark/light theme options, and feed polling, mount the static assets at `/`, expose a status endpoint, and polish all repository documentation files.
+
+### Implementation
+
+*   **Evaluator Dashboard**: Created `app/static/index.html` as a clean, responsive single-page observer application featuring dark and light modes, status cards, copy buttons, and periodic feed polling.
+*   **Static Asset Mounting**: Configured `app.mount("/", StaticFiles(...))` in `app/main.py` to serve static pages on the root path.
+*   **Status Endpoint**: Exposed `/api/agent/status?agentId=<id>` in `app/api/endpoints/agent.py` to retrieve active persona configuration parameters upon page loads.
+*   **Endpoint Unit Tests**: Added status assertions in `tests/test_milestone10.py`.
+*   **Mermaid Flowchart Syntax Fixes**: Corrected flowchart syntax in `README.md` to ensure correct rendering on GitHub, and simplified the structure.
+*   **Documentation Polish**: Replaced `README.md` with a structured hero section, badges, status tables, and workflow explanations, and linked the dashboard screenshot.
+
+### Design Decisions
+
+*   **Vanilla CSS**: Used custom CSS variables for smooth light/dark switching and clean borders, avoiding heavy UI libraries.
+*   **Observer Only**: Form submissions do not trigger background cycles; the frontend strictly polls and observes feed states to maintain backend autonomy.
+*   **Status Endpoint isolation**: Exposes the status endpoint solely for dashboard load states, leaving main hackathon endpoints (`POST /init`, `GET /feed`) fully unchanged.
+
+### Testing
+
+*   All 74 backend regression and endpoint unit tests passed.
+
+### Verification
+
+*   Browser subagent successfully initialized the agent Ada, verified status elements, toggled the theme, verified responsive viewport rendering, and saved the dashboard screenshot.
+
+### Outcome
+
+Milestone 11 Evaluator Dashboard, Static Assets serving, API status endpoints, and README overhaul completed successfully.
+
+### Limitations
+
+*   Centralized memory provider Breeth cloud storage is not implemented yet.
+
+---
+
 ## Development Timeline
 
 ```text
@@ -4155,8 +4215,11 @@ Milestone 10 reliability, self-healing scheduling loop, isolation boundaries, an
  │                                               │
  │                                               └──── M10 ── Autonomous Reliability & Failure Recovery
  │                                                     │     Aug 09, 2026
- │                                                     ▼
- │                                                   [Current State]
+ │                                                     │
+ │                                                     └──── M11 ── Evaluator UI/UX & Final Documentation Polish
+ │                                                           │     Aug 09, 2026
+ │                                                           ▼
+ │                                                         [Current State]
 ```
 
 ---
@@ -4190,6 +4253,7 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Autonomous Execution Loop & Scheduling**: Background periodic execution cycles, state transitions, concurrency locking, and draft storages.
 * **Autonomous Publishing Feed**: Connected loop cycles directly to the queryable feed API, sorted newest-first, and secured by multi-constraint post validations.
 * **Autonomous Reliability & Recovery**: Failure isolation boundaries, configurable timeouts, bounded topic discovery retries, and defensive duplication prevention.
+* **Evaluator UI Dashboard**: Responsive observer dashboard serving HTML/CSS/JS static assets directly on the root endpoint.
 
 ### Intentionally Not Yet Implemented
 

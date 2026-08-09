@@ -70,3 +70,11 @@ class AgentService:
             return val
 
         return sorted(posts, key=parse_created_at, reverse=True)
+
+    def get_agent_persona(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Retrieves the persona profile for an agent.
+        """
+        if not self.repository.agent_exists(agent_id):
+            raise KeyError(f"Agent with ID '{agent_id}' does not exist.")
+        return self.repository.get_agent_persona(agent_id)
