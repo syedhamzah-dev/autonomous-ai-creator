@@ -356,10 +356,23 @@ class AgentScheduler:
 
 
 # Instantiate the singleton system instances
+from app.core.config import settings
+from app.services.llm import MockLLMClient, GeminiLLMClient
+
 memory_repo = LocalFileMemoryRepository(base_dir="data/memory")
 memory_service = MemoryService(repository=memory_repo)
 discovery_service = TopicDiscoveryService()
-llm_client = MockLLMClient()
+
+if settings.app_env == "test":
+    llm_client = MockLLMClient()
+else:
+    if not settings.llm_api_key:
+        raise ValueError(
+            "CRITICAL CONFIGURATION ERROR: 'LLM_API_KEY' environment variable is not configured. "
+            "A real LLM provider API key is required in production/development mode."
+        )
+    llm_client = GeminiLLMClient(api_key=settings.llm_api_key, model_name=settings.llm_model)
+
 editorial_service = EditorialJudgmentService(llm_client=llm_client)
 generator_service = ContentGeneratorService(llm_client=llm_client, memory_service=memory_service)
 

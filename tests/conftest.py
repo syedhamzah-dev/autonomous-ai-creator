@@ -1,3 +1,7 @@
+import os
+os.environ["APP_ENV"] = "test"
+os.environ["AUTONOMOUS_ENABLED"] = "False"
+
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app

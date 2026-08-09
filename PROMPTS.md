@@ -2872,6 +2872,46 @@ Instructs the agent to:
 4. **Pytest Run**: Executed the full backend pytest suite (all 75 tests passed green).
 5. **Git Hardening**: Committed changes as `feat: harden autonomous runtime and evaluator flow` while maintaining a clean tree and verifying security keys.
 
+---
+
+## Milestone 13 — Real LLM Integration & Production AI Pipeline
+
+### Objective
+
+Integrate a real LLM provider (Google Gemini API using model `gemini-2.5-flash`) for production runs while retaining `MockLLMClient` for deterministic unit test suites. Set configuration validations preventing startup in production/dev without the necessary credentials.
+
+### Role Given to the Coding Agent
+
+Senior AI Engineer, Backend Engineer, LLM Integration Engineer, Software Architect, QA Engineer, and Security Engineer.
+
+### Prompt
+
+```text
+# M13 — REAL LLM INTEGRATION & PRODUCTION AI PIPELINE
+
+Act as a Senior AI Engineer, Backend Engineer, LLM Integration Engineer, Software Architect, QA Engineer, and Security Engineer.
+Replace the PRODUCTION use of MockLLMClient with a real LLM provider.
+The architecture must support Production: Real LLM Provider; Testing: MockLLMClient.
+```
+
+### What This Prompt Does
+
+Instructs the agent to:
+1. Add `llm_api_key` and `llm_model` configuration variables to the Settings class.
+2. Implement `GeminiLLMClient(BaseLLMClient)` in `app/services/llm.py` executing async POST requests to the Gemini API, utilizing JSON schemas (`responseMimeType="application/json"` and `responseSchema`) to enforce structured decisions and text posts, and mapping HTTP statuses to appropriate exceptions.
+3. Enforce startup errors on production/dev boot when `LLM_API_KEY` is missing.
+4. Update `tests/conftest.py` setting `os.environ["APP_ENV"] = "test"` for testing isolations.
+5. Create mock-based unit tests verifying schema responses, timeouts, rate-limits, and credential errors.
+
+### Development Outcome
+
+1. **Production LLM Client**: Developed `GeminiLLMClient` inside `app/services/llm.py` which executes HTTP request payloads conforming to structured JSON output shapes.
+2. **Dynamic Client Selection**: Updated `app/services/autonomous.py` to dynamically load the Gemini client in prod/dev while requiring the key, or the Mock client in tests.
+3. **Pydantic Configs & Envs**: Configured settings to bind `LLM_API_KEY` and updated `.env.example` templates.
+4. **Isolation in Tests**: Set conftest overrides forcing mock mode during test runs.
+5. **Thorough LLM Tests**: Created `tests/test_real_llm.py` checking decision and generation logic, rate limits, auth errors, timeouts, and scheduler survivability (10 passed tests, total 85 passing tests).
+
+
 
 
 

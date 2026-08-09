@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+import json
 from typing import Dict, Any, List, Optional
+import httpx
 from app.schemas.persona import PersonaProfile
 from app.schemas.topic import TopicCandidate
 from app.schemas.editorial import EditorialDecision
@@ -232,3 +234,183 @@ class MockLLMClient(BaseLLMClient):
                 "matchedInterestsCount": len(persona.core_interests)
             }
         }
+
+
+class GeminiLLMClient(BaseLLMClient):
+    """
+    Production client connecting to the Google Gemini API using httpx directly.
+    Guarantees structured responses using native JSON Schema configurations.
+    """
+    def __init__(self, api_key: str, model_name: str = "gemini-2.5-flash", timeout_seconds: float = 30.0) -> None:
+        self.api_key = api_key
+        self.model_name = model_name
+        self.timeout_seconds = timeout_seconds
+
+    async def _post_request(self, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Helper to execute the async POST request to the Gemini API.
+        """
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": prompt
+                }]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "responseSchema": schema
+            }
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                resp = await client.post(url, json=payload)
+        except httpx.TimeoutException as time_err:
+            raise TimeoutError("Simulated LLM service connection timeout during API request.") from time_err
+        except httpx.RequestError as req_err:
+            raise RuntimeError(f"LLM API network request failed: {req_err}") from req_err
+
+        if resp.status_code in (401, 403):
+            raise PermissionError("Authentication failed: invalid LLM_API_KEY credentials.")
+        elif resp.status_code == 429:
+            raise RuntimeError("Rate limit exceeded on LLM provider.")
+        elif resp.status_code != 200:
+            raise RuntimeError(f"LLM API request failed with status code {resp.status_code}: {resp.text}")
+
+        try:
+            resp_json = resp.json()
+        except Exception as parse_err:
+            raise ValueError(f"Failed to parse LLM HTTP response as JSON: {parse_err}") from parse_err
+
+        candidates = resp_json.get("candidates", [])
+        if not candidates:
+            raise ValueError("Empty or blocked response from LLM provider (no candidates).")
+
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts or "text" not in parts[0]:
+            raise ValueError("LLM response is missing text generation parts.")
+
+        text_out = parts[0]["text"].strip()
+        if not text_out:
+            raise ValueError("LLM response returned empty text output.")
+
+        try:
+            return json.loads(text_out)
+        except json.JSONDecodeError as json_err:
+            raise ValueError(f"Malformed LLM output: not valid JSON schema. Detail: {json_err}") from json_err
+
+    async def generate_structured_decision(
+        self,
+        persona: PersonaProfile,
+        candidate: TopicCandidate,
+        current_time_str: str
+    ) -> Dict[str, Any]:
+        prompt = (
+            f"Act as an editorially rigorous Technology Editor and QA Analyst.\n"
+            f"Judge whether the discovered article candidate aligns with the persona below.\n\n"
+            f"Persona Profile:\n"
+            f"- Name: {persona.name}\n"
+            f"- Domain: {persona.domain}\n"
+            f"- Mission: {persona.mission}\n"
+            f"- Core Interests: {persona.core_interests}\n"
+            f"- Topics to Avoid: {persona.topics_to_avoid}\n\n"
+            f"Article Candidate:\n"
+            f"- Title: {candidate.title}\n"
+            f"- Summary: {candidate.summary}\n"
+            f"- Source URL: {candidate.sourceUrl}\n"
+            f"- Discovered At: {candidate.publishedAt.isoformat() if candidate.publishedAt else 'N/A'}\n"
+            f"- Current Evaluation Time: {current_time_str}\n\n"
+            f"Rules:\n"
+            f"1. Score overall fitness between 0.0 and 10.0.\n"
+            f"2. If fit is >= 6.0 and contains no avoided topics, set decision to 'ACCEPT', otherwise 'REJECT'.\n"
+            f"3. Fill in all score parameters and reasons array.\n"
+        )
+
+        schema = {
+            "type": "OBJECT",
+            "properties": {
+                "decision": {
+                    "type": "STRING",
+                    "enum": ["ACCEPT", "REJECT"]
+                },
+                "score": {"type": "NUMBER"},
+                "reasons": {
+                    "type": "ARRAY",
+                    "items": {"type": "STRING"}
+                },
+                "relevanceScore": {"type": "NUMBER"},
+                "freshnessScore": {"type": "NUMBER"},
+                "significanceScore": {"type": "NUMBER"},
+                "sourceQualityScore": {"type": "NUMBER"},
+                "personaFitScore": {"type": "NUMBER"},
+                "confidence": {"type": "NUMBER"}
+            },
+            "required": [
+                "decision", "score", "reasons", "relevanceScore", "freshnessScore",
+                "significanceScore", "sourceQualityScore", "personaFitScore", "confidence"
+            ]
+        }
+
+        parsed = await self._post_request(prompt, schema)
+        
+        # Verify structure keys
+        for key in schema["required"]:
+            if key not in parsed:
+                raise ValueError(f"LLM structured response is missing required field: '{key}'")
+        return parsed
+
+    async def generate_post_content(
+        self,
+        persona: PersonaProfile,
+        candidate: TopicCandidate,
+        decision: EditorialDecision,
+        memories: List[AgentMemory]
+    ) -> Dict[str, Any]:
+        prompt = (
+            f"Act as a professional technology content writer.\n"
+            f"Generate a social media post based on the following accepted candidate.\n\n"
+            f"Persona Profile:\n"
+            f"- Name: {persona.name}\n"
+            f"- Domain: {persona.domain}\n"
+            f"- Mission: {persona.mission}\n"
+            f"- Audience: Technology professionals\n"
+            f"- Tone: Professional, technically precise, and concise.\n\n"
+            f"Article Candidate:\n"
+            f"- Title: {candidate.title}\n"
+            f"- Summary: {candidate.summary}\n"
+            f"- Source URL: {candidate.sourceUrl}\n\n"
+            f"Editorial Reasons for Acceptance:\n"
+            f"{' | '.join(decision.reasons)}\n\n"
+            f"Rules:\n"
+            f"1. Generate a post that is concise, clear, and grounded in candidate facts.\n"
+            f"2. Write a detailed rationale explaining why this was selected.\n"
+            f"3. Retain the candidate's sourceUrl in the sources list.\n"
+        )
+
+        schema = {
+            "type": "OBJECT",
+            "properties": {
+                "text": {"type": "STRING"},
+                "rationale": {"type": "STRING"},
+                "sources": {
+                    "type": "ARRAY",
+                    "items": {"type": "STRING"}
+                }
+            },
+            "required": ["text", "rationale", "sources"]
+        }
+
+        parsed = await self._post_request(prompt, schema)
+        
+        # Verify structure keys
+        for key in schema["required"]:
+            if key not in parsed:
+                raise ValueError(f"LLM structured response is missing required field: '{key}'")
+                
+        # Append generation metadata to resemble standard MockClient structure
+        parsed["generationMetadata"] = {
+            "model": self.model_name,
+            "provider": "GeminiAPI"
+        }
+        return parsed

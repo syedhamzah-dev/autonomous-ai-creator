@@ -66,7 +66,8 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M9** | Autonomous Publishing | Connected background loops to the evaluator feed API, validation, sorting | `0e9c784`<br>`feat: implement autonomous publishing feed` |
 | **M10** | Autonomous Reliability | Safe fault-isolation, bounded retries, priority writing, and recovery | `0f04749`<br>`feat: improve autonomous reliability and recovery` |
 | **M11** | Evaluator UI & Polish | Polished observer dashboard, theme toggles, Mermaid diagram fixes | `bb9003c`<br>`feat: add evaluator dashboard and polish documentation` |
-| **M12** | E2E Hardening & Cleanup | Time-based simulation script, separated frontend assets, key review | `feat: harden autonomous runtime and evaluator flow` |
+| **M12** | E2E Hardening & Cleanup | Time-based simulation script, separated frontend assets, key review | `6fdbe61`<br>`feat: harden autonomous runtime and evaluator flow` |
+| **M13** | Real LLM Integration | Google Gemini API integration, JSON schema outputs, startup safety | `feat: integrate production llm provider` |
 
 ---
 
@@ -4246,6 +4247,74 @@ Milestone 12 End-to-End Hardening, UI Separation, and Evaluator Simulation scrip
 
 ---
 
+## Milestone M13 — Real LLM Integration & Production AI Pipeline
+
+### Objective
+
+To replace the production MockLLMClient path with a real LLM provider (Google Gemini API using model `gemini-2.5-flash`) while retaining the mock client for unit and integration testing.
+
+### Prompt
+
+```text
+# M13 — REAL LLM INTEGRATION & PRODUCTION AI PIPELINE
+
+Act as a Senior AI Engineer, Backend Engineer, LLM Integration Engineer, Software Architect, QA Engineer, and Security Engineer.
+Replace the PRODUCTION use of MockLLMClient with a real LLM provider.
+The architecture must support Production: Real LLM Provider; Testing: MockLLMClient.
+```
+
+### What This Prompt Does
+
+Instructed the coding agent to:
+1. Define Pydantic settings for `LLM_API_KEY` and `LLM_MODEL`.
+2. Implement `GeminiLLMClient(BaseLLMClient)` inside `app/services/llm.py` employing Direct HTTP POST requests to Gemini models, using response schemas (`responseSchema` and `responseMimeType="application/json"`) to validate structures.
+3. Validate client existence at server initialization and raise a startup configuration error if production starts without `LLM_API_KEY`.
+4. Isolate pytest runs by setting environment overrides in `tests/conftest.py`.
+5. Develop mock-based tests mapping HTTP exceptions to appropriate types and checking loop failures.
+
+### Implementation
+
+*   **Pydantic Config**: Added `llm_api_key` and `llm_model` fields to `app/core/config.py`.
+*   **Gemini Client**: Implemented `GeminiLLMClient(BaseLLMClient)` in `app/services/llm.py` with async Direct HTTP JSON calls.
+*   **Safety Overrides**: Setup pytest environment variables to force mock client usage offline.
+*   **Fail-Fast Startup**: Configured a `ValueError` throw on startup in `app/services/autonomous.py` if `LLM_API_KEY` is not present during prod/dev mode.
+
+### Architecture
+
+```text
+                  BaseLLMClient
+                        │
+             ┌──────────┴──────────┐
+             │                     │
+             ▼                     ▼
+       MockLLMClient        GeminiLLMClient
+             │                     │
+      Unit Test Suite     Production / Live
+```
+
+### Security
+
+The `LLM_API_KEY` token is loaded strictly from the environment (`.env`) via standard Pydantic validation rules. Safe placeholders are documented in `.env.example`. No keys are printed, logged, or hardcoded anywhere in the codebase.
+
+### Testing
+
+Developed `tests/test_real_llm.py` which isolates all network calls via Python's standard `patch` and `AsyncMock` framework. 
+*   **Real Client Config**: Confirmed configuration parameters bind.
+*   **Decision / Content Parsing**: Verified JSON structure deserialization.
+*   **HTTP Failures**: Handled 401/403 (Authentication), 429 (Rate-limiting), timeouts (`TimeoutError`), and malformed/empty JSON responses correctly.
+*   **Loop Safety**: Verified loops do not crash when the LLM service fails.
+*   **Result**: 10 tests passed successfully. Full regression test suite passed successfully (85/85 green).
+
+### Verification
+
+Ran all automated tests locally using `.venv\Scripts\pytest` and verified client environments using unit test configurations.
+
+### Outcome
+
+Milestone 13 Real LLM Provider Integration completed successfully.
+
+---
+
 ## Development Timeline
 
 ```text
@@ -4284,8 +4353,11 @@ Milestone 12 End-to-End Hardening, UI Separation, and Evaluator Simulation scrip
  │                                                           │
  │                                                           └──── M12 ── End-to-End Autonomous Validation & Frontend Cleanup
  │                                                                 │     Aug 09, 2026
- │                                                                 ▼
- │                                                               [Current State]
+ │                                                                 │
+ │                                                                 └──── M13 ── Real LLM Integration & Production AI Pipeline
+ │                                                                       │     Aug 09, 2026
+ │                                                                       ▼
+ │                                                                     [Current State]
 ```
 
 ---
@@ -4322,6 +4394,7 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Evaluator UI Dashboard**: Responsive observer dashboard serving HTML/CSS/JS static assets directly on the root endpoint.
 * **Separated Frontend Components**: Granular separation of UI styles (`styles.css`), routines (`app.js`), and templates (`index.html`).
 * **Time-Based Evaluator Simulation**: Automatic script validating scheduler boot-ups, chronologies, and feed duplicates offline via local mock server integrations.
+* **Real LLM API Integration**: Production-ready Google Gemini API integration using native JSON schemas to guarantee structured output shapes.
 
 ### Intentionally Not Yet Implemented
 

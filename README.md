@@ -149,6 +149,18 @@ The evaluator dashboard is structured into three clean, separate files inside th
 
 ---
 
+## Real LLM Integration & Environments
+
+The system supports two execution environments for LLM interaction:
+*   **Production / Development Mode**: Connects to the real Google Gemini API provider (`gemini-2.5-flash` model by default) using async HTTP calls. It requires the environment variable `LLM_API_KEY` to be set. If started without the key, the application will raise a startup validation error and fail immediately.
+*   **Testing Mode**: Automatically active during `pytest` runs (`APP_ENV="test"`). It uses the local `MockLLMClient` class for fully deterministic, offline test executions.
+
+### Required Environment Variables
+*   `LLM_API_KEY`: Your real Google Gemini API developer key.
+*   `LLM_MODEL`: The target model name (defaults to `gemini-2.5-flash`).
+
+---
+
 ## Setup & Local Installation
 
 ### 1. Initialize Virtual Environment

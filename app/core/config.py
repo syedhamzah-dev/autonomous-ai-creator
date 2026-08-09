@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # Discovery Timeout Settings
     discovery_timeout_seconds: float = Field(default=10.0, validation_alias="DISCOVERY_TIMEOUT_SECONDS")
 
+    # Real LLM API Provider Settings
+    llm_api_key: str | None = Field(default=None, validation_alias="LLM_API_KEY")
+    llm_model: str = Field(default="gemini-2.5-flash", validation_alias="LLM_MODEL")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
