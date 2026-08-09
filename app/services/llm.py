@@ -236,6 +236,11 @@ class MockLLMClient(BaseLLMClient):
         }
 
 
+class RateLimitError(RuntimeError):
+    """Exception raised when the LLM provider returns a rate limit (HTTP 429) error."""
+    pass
+
+
 class GeminiLLMClient(BaseLLMClient):
     """
     Production client connecting to the Google Gemini API using httpx directly.
@@ -274,7 +279,7 @@ class GeminiLLMClient(BaseLLMClient):
         if resp.status_code in (401, 403):
             raise PermissionError("Authentication failed: invalid LLM_API_KEY credentials.")
         elif resp.status_code == 429:
-            raise RuntimeError("Rate limit exceeded on LLM provider.")
+            raise RateLimitError("Rate limit exceeded on LLM provider.")
         elif resp.status_code != 200:
             raise RuntimeError(f"LLM API request failed with status code {resp.status_code}: {resp.text}")
 

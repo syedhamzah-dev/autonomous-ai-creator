@@ -157,6 +157,13 @@ class AutonomousExecutionService:
                 try:
                     decision = await self.editorial_service.evaluate_candidate(persona, candidate)
                 except Exception as eval_err:
+                    from app.services.llm import RateLimitError
+                    if isinstance(eval_err, RateLimitError) or "Rate limit exceeded" in str(eval_err):
+                        logger.warning(
+                            f"[RATE_LIMIT_WARNING] Gemini API rate limit exceeded during topic evaluation for agent {agent_id}. "
+                            "Abandoning the current cycle to protect Free Tier limits."
+                        )
+                        raise eval_err
                     logger.error(f"Editorial scoring error for candidate '{candidate.title}': {eval_err}")
                     continue
 
@@ -199,7 +206,6 @@ class AutonomousExecutionService:
                     # Select the first accepted topic candidate and proceed to generate
                     break
 
-            # Step 3: Content Generation (only if accepted topic exists)
             if accepted_candidate and accepted_decision:
                 try:
                     logger.info(f"Generating post content for accepted candidate: '{accepted_candidate.title}'")
@@ -210,6 +216,13 @@ class AutonomousExecutionService:
                         decision=accepted_decision
                     )
                 except Exception as gen_err:
+                    from app.services.llm import RateLimitError
+                    if isinstance(gen_err, RateLimitError) or "Rate limit exceeded" in str(gen_err):
+                        logger.warning(
+                            f"[RATE_LIMIT_WARNING] Gemini API rate limit exceeded during content generation for agent {agent_id}. "
+                            "Abandoning the current cycle to protect Free Tier limits."
+                        )
+                        raise gen_err
                     logger.error(f"[GENERATION_FAILURE] Content generation failed for candidate '{accepted_candidate.title}': {gen_err}", exc_info=True)
                     raise RuntimeError(f"Content generation failed: {gen_err}") from gen_err
 

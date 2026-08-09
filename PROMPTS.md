@@ -2911,6 +2911,48 @@ Instructs the agent to:
 4. **Isolation in Tests**: Set conftest overrides forcing mock mode during test runs.
 5. **Thorough LLM Tests**: Created `tests/test_real_llm.py` checking decision and generation logic, rate limits, auth errors, timeouts, and scheduler survivability (10 passed tests, total 85 passing tests).
 
+---
+
+## Milestone 14 — Production Hardening, CORS & Deployment Readiness
+
+### Objective
+
+Make the application suitable for persistent deployment under the Gemini Free Tier. Configure secure CORS middleware, production exception boundary handlers, custom rate-limiting cycle guards, and Docker assets.
+
+### Role Given to the Coding Agent
+
+Senior Backend Engineer, DevOps Engineer, Security Engineer, Cloud Deployment Engineer, QA Engineer, and Hackathon Reviewer.
+
+### Prompt
+
+```text
+# M14 — PRODUCTION HARDENING, CORS & DEPLOYMENT READINESS
+
+Act as a Senior Backend Engineer, DevOps Engineer, Security Engineer, Cloud Deployment Engineer, QA Engineer, and Hackathon Reviewer.
+The application must remain autonomous, secure, configurable, observable, and testable.
+Configure CORS middleware, rate limit safety, global error handlers, Docker deployment files, and add tests.
+```
+
+### What This Prompt Does
+
+Instructs the agent to:
+1. Update application configuration Settings class to support list parsing for `CORS_ORIGINS`.
+2. Define and raise a custom `RateLimitError(RuntimeError)` on HTTP status code 429 inside the Gemini client.
+3. Configure candidate filtering and content generation cycles in `app/services/autonomous.py` to cleanly abort on `RateLimitError`, preventing rapid model retries and logging a warning.
+4. Mount FastAPI `CORSMiddleware` using parsed allowed origins.
+5. Create a global FastAPI handler trapping generic exceptions, logging them server-side, and returning secure 500 JSON detail envelopes.
+6. Provide a production `Dockerfile` and `.dockerignore`.
+7. Add tests for CORS headers, error handlers, and rate limit cycle aborts (resulting in 89 passing tests).
+
+### Development Outcome
+
+1. **CORS Middleware & Settings**: Implemented comma-separated allowed origin parsing and registered `CORSMiddleware` in `app/main.py`.
+2. **Free Tier Safety Guards**: Integrated custom `RateLimitError` that aborts cycles immediately on 429 rate limit exceptions, protecting developer accounts from uncontrolled loops.
+3. **Trace Protection**: Hooked up generic exception boundary trapping returning safe 500 details to endpoints.
+4. **Containerization**: Authored Docker configurations (`Dockerfile`, `.dockerignore`) targeted at persistent cloud runtimes.
+5. **Quality Hardening Tests**: Added `tests/test_production_harden.py` and exception tests in `test_health.py` (all 89 test suites successfully green).
+
+
 
 
 

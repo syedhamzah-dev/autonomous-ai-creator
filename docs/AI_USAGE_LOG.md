@@ -67,7 +67,8 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M10** | Autonomous Reliability | Safe fault-isolation, bounded retries, priority writing, and recovery | `0f04749`<br>`feat: improve autonomous reliability and recovery` |
 | **M11** | Evaluator UI & Polish | Polished observer dashboard, theme toggles, Mermaid diagram fixes | `bb9003c`<br>`feat: add evaluator dashboard and polish documentation` |
 | **M12** | E2E Hardening & Cleanup | Time-based simulation script, separated frontend assets, key review | `6fdbe61`<br>`feat: harden autonomous runtime and evaluator flow` |
-| **M13** | Real LLM Integration | Google Gemini API integration, JSON schema outputs, startup safety | `feat: integrate production llm provider` |
+| **M13** | Real LLM Integration | Google Gemini API integration, JSON schema outputs, startup safety | `7194890`<br>`feat: integrate production llm provider` |
+| **M14** | Production Hardening | CORS middleware config, RateLimit cycle guards, Docker assets, error safety | `feat: harden app for production deployment` |
 
 ---
 
@@ -4312,6 +4313,67 @@ Ran all automated tests locally using `.venv\Scripts\pytest` and verified client
 ### Outcome
 
 Milestone 13 Real LLM Provider Integration completed successfully.
+
+---
+
+## Milestone M14 — Production Hardening, CORS & Deployment Readiness
+
+### Objective
+
+To secure the application, prevent Free Tier quota exhaustion, configure CORS, format server errors safely, and add Docker resources to make the codebase production-ready for persistent deployment.
+
+### Prompt
+
+```text
+# M14 — PRODUCTION HARDENING, CORS & DEPLOYMENT READINESS
+
+Act as a Senior Backend Engineer, DevOps Engineer, Security Engineer, Cloud Deployment Engineer, QA Engineer, and Hackathon Reviewer.
+The application must remain autonomous, secure, configurable, observable, and testable.
+Configure CORS middleware, rate limit safety, global error handlers, Docker deployment files, and add tests.
+```
+
+### What This Prompt Does
+
+Instructed the coding agent to:
+1. Support allowed origin lists in the configuration Settings class parsing from environment variables.
+2. Define a custom `RateLimitError` inside `app/services/llm.py` and raise it on HTTP 429 status codes.
+3. Bubble `RateLimitError` out of topic evaluation steps and intercept it in the runner cycle to log warnings and exit loops safely, protecting Gemini Free Tier allowances.
+4. Mount FastAPI CORS middleware mapping `settings.cors_origins`.
+5. Intercept generic server errors globally in `app/main.py` to return generic 500 JSON detail blocks while passing standard Starlette HTTPExceptions.
+6. Provide Docker assets (`Dockerfile`, `.dockerignore`) geared toward persistent web service hosting.
+7. Append unit/integration test validations covering CORS preflights, error traps, settings parsing, and rate limit scheduler safety (completing 89 green tests).
+
+### Implementation
+
+*   **FastAPI CORS Middleware**: Configured `CORSMiddleware` in `app/main.py` allowing specified origins.
+*   **Exception Boundary Handler**: Configured a global FastAPI exception mapper trapping general exceptions and returning safe 500 payloads, preventing filepath leaks.
+*   **RateLimit Cycle Interception**: Integrated custom `RateLimitError` that aborts cycles immediately on 429 rate limit exceptions, preventing aggressive retry loops.
+*   **Docker Container Setup**: Configured a production-grade `Dockerfile` using `python:3.11-slim` and an appropriate `.dockerignore`.
+
+### Security
+
+CORS is restricted to specified origins. Database trace logs are kept on the server while client-facing API endpoints return anonymous 500 JSONs. The Gemini API key remains encapsulated behind environment parameters and never exposes to client browsers.
+
+### Deployment
+
+Configured for persistent web-service hosting. Runs standard `uvicorn app.main:app` processes on a configured port, which prevents background execution loops from freezing.
+
+### Testing
+
+Added `tests/test_production_harden.py` and exception handler verification checks in `tests/test_health.py`.
+*   **CORS Preflight**: Verified allowed origins header and credentials return.
+*   **Settings Parsing**: Tested comma-separated strings and JSON list configurations.
+*   **Safe Exception Handler**: Verified mock errors on `/health` return 500 with clean payloads.
+*   **Rate-limit Cycle Aborts**: Confirmed cycles fail cleanly and let schedulers sleep on 429s.
+*   **Result**: 89 tests successfully green.
+
+### Verification
+
+Verified CORS responses using curl options, checked `/health` responses, and tested cycle runner behaviors under simulated rate-limits.
+
+### Outcome
+
+Milestone 14 Production Hardening completed successfully.
 
 ---
 

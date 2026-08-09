@@ -56,6 +56,27 @@ class Settings(BaseSettings):
     llm_api_key: str | None = Field(default=None, validation_alias="LLM_API_KEY")
     llm_model: str = Field(default="gemini-2.5-flash", validation_alias="LLM_MODEL")
 
+    # CORS Settings
+    cors_origins: List[str] = Field(
+        default=["http://localhost:8000", "http://127.0.0.1:8000"],
+        validation_alias="CORS_ORIGINS"
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return []
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

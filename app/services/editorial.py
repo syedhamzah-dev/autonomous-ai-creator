@@ -65,6 +65,9 @@ class EditorialJudgmentService:
                     confidence=llm_res.get("confidence", 0.85)
                 )
             except Exception as e:
+                from app.services.llm import RateLimitError
+                if isinstance(e, RateLimitError) or "Rate limit exceeded" in str(e):
+                    raise e
                 logger.error(
                     f"LLM evaluation failed for candidate {candidate.id}: {e}. Failing safely with REJECT.",
                     exc_info=True
@@ -101,6 +104,9 @@ class EditorialJudgmentService:
                 decision = await self.evaluate_candidate(persona, candidate)
                 decisions.append(decision)
             except Exception as e:
+                from app.services.llm import RateLimitError
+                if isinstance(e, RateLimitError) or "Rate limit exceeded" in str(e):
+                    raise e
                 logger.error(
                     f"Unexpected exception evaluating candidate {candidate.id}: {e}. Failing safely with REJECT.",
                     exc_info=True

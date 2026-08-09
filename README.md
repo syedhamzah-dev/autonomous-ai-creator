@@ -205,6 +205,78 @@ pytest
 
 ---
 
+## Production Architecture
+
+```text
+User / Browser
+      │
+      ▼
+  Dashboard (UI)
+      │
+      ▼
+   FastAPI (Backend)
+      │
+      ├── Topic Discovery (Fetches tech news feeds)
+      │
+      ├── Memory System (Checks repetition / overlap)
+      │
+      ├── Editorial Judgment (Persona threshold scoring)
+      │
+      ├── Content Generator (Persona mapping & voices)
+      │
+      └── Gemini API (Direct HTTP structured content)
+            │
+            ▼
+        Published Feed Endpoint
+```
+
+---
+
+## Deployment Configuration
+
+This application is designed to run as a **persistent web service** so that the background scheduler loops run autonomously.
+
+### 1. Required Deployment Environment Variables
+*   `LLM_API_KEY`: Your Gemini API developer key (Free Tier).
+*   `CORS_ORIGINS`: Comma-separated allowed origins (e.g. `https://your-frontend.com` or `*` for public access).
+*   `APP_ENV`: Set to `prod` for production.
+*   `PORT`: Target port (defaults to `8000`).
+
+### 2. Standard Server Deployment (No Docker)
+You can deploy directly to a standard server (e.g. VPS, EC2) by cloning the repository and running:
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### 3. Containerized Deployment (Docker)
+We include a standard production `Dockerfile` in the root of the repository. To build and run:
+```bash
+# Build the container
+docker build -t autonomous-creator .
+
+# Run the container (binds to host port 8000, passing API key)
+docker run -p 8000:8000 -e LLM_API_KEY="your-gemini-api-key" autonomous-creator
+```
+
+### 4. Direct Cloud Deployment (Render, Railway, Fly.io)
+For platforms like Render or Railway:
+1.  Create a new **Web Service** pointing to this GitHub repository.
+2.  Set the start command to: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3.  Add `LLM_API_KEY` as a **Secret Environment Variable**.
+4.  Do *not* deploy on serverless function models (like Vercel or AWS Lambda) as background execution loops require a persistent server process.
+
+---
+
+## Security
+
+*   **Secret Encapsulation**: Gemini credentials and API keys are stored strictly in environment variables and never reach the client/frontend browser. The browser only polls transient `/feed` and `/status` endpoints.
+*   **Safe Exception Formatting**: Generic internal server errors are intercepted globally. They log trace details on the server but return a safe generic `500 Internal Server Error` message to the client, preventing database, trace, or file path leaks.
+*   **CORS Protection**: Access controls are strictly enforced on endpoints via FastAPI's `CORSMiddleware`, loading configurations dynamically from the environment.
+*   **Environment Exclusions**: Local `.env` files are ignored by git rules to prevent credential leakage.
+
+---
+
 ## Hackathon Development
 *   **PROMPTS.md**: Contains the exact prompts executed for each milestone progression.
 *   **docs/AI_USAGE_LOG.md**: Chronological development log detailing outcomes, verification checks, and limitations.
