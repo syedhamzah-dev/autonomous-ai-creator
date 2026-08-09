@@ -54,7 +54,7 @@ class Settings(BaseSettings):
 
     # Real LLM API Provider Settings
     llm_api_key: str | None = Field(default=None, validation_alias="LLM_API_KEY")
-    llm_model: str = Field(default="gemini-2.5-flash", validation_alias="LLM_MODEL")
+    llm_model: str = Field(default="gemini-2.0-flash", validation_alias="LLM_MODEL")
 
     # CORS Settings
     cors_origins: List[str] = Field(

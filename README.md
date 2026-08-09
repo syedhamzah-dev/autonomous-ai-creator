@@ -157,7 +157,7 @@ The system supports two execution environments for LLM interaction:
 
 ### Required Environment Variables
 *   `LLM_API_KEY`: Your real Google Gemini API developer key.
-*   `LLM_MODEL`: The target model name (defaults to `gemini-2.5-flash`).
+*   `LLM_MODEL`: The target model name (defaults to `gemini-2.0-flash`).
 
 ---
 

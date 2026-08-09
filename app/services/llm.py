@@ -246,7 +246,7 @@ class GeminiLLMClient(BaseLLMClient):
     Production client connecting to the Google Gemini API using httpx directly.
     Guarantees structured responses using native JSON Schema configurations.
     """
-    def __init__(self, api_key: str, model_name: str = "gemini-2.5-flash", timeout_seconds: float = 30.0) -> None:
+    def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash", timeout_seconds: float = 30.0) -> None:
         self.api_key = api_key
         self.model_name = model_name
         self.timeout_seconds = timeout_seconds
