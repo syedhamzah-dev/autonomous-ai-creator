@@ -85,6 +85,7 @@ The system uses a **Persona Engine** that generates a stable, teknical profile u
 The memory layer uses persistent JSON files named after the initialized `agentId`.
 *   **Duplicate Prevention**: When analyzing a discovered topic, the system checks memory for a token overlap >= 60% or an exact source URL match. If memory operations fail, the topic is conservatively treated as a duplicate to ensure safe operations.
 *   **Write Priority**: The system writes to memory first. If writing fails, publishing is aborted, avoiding duplicate postings in future cycles.
+*   **Persistence Limit**: The memory storage layer (persistent JSON records of topics/posts) survives across server processes, whereas the FastAPI runtime active agents list is maintained in-memory and does not persist across application restarts.
 
 ---
 
@@ -136,6 +137,15 @@ Retrieve the chronologically sorted newest-first feed.
 A simple, responsive observer dashboard is hosted directly on the root endpoint. It contains initialization form controls, status metrics, pipeline stages, and active feed polling.
 
 ![Evaluator Dashboard](docs/images/dashboard.png)
+
+---
+
+## Frontend Structure
+
+The evaluator dashboard is structured into three clean, separate files inside the `app/static` folder:
+*   [index.html](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/static/index.html): Defines the structure and semantic layout of the dashboard.
+*   [styles.css](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/static/styles.css): Controls the responsive design, visual styling, variables, and dark/light modes.
+*   [app.js](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/static/app.js): Handles API integrations, status checks, feed polling, clipboard copying, and rendering logic.
 
 ---
 

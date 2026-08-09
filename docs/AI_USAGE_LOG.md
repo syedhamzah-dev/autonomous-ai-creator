@@ -65,7 +65,8 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M8** | Scheduling Loop | Periodic autonomous cycle execution, states, locks, failure resilience | `9b6825f30322219804d38dafca4eaf810894f278`<br>`feat: add autonomous execution loop` |
 | **M9** | Autonomous Publishing | Connected background loops to the evaluator feed API, validation, sorting | `0e9c784`<br>`feat: implement autonomous publishing feed` |
 | **M10** | Autonomous Reliability | Safe fault-isolation, bounded retries, priority writing, and recovery | `0f04749`<br>`feat: improve autonomous reliability and recovery` |
-| **M11** | Evaluator UI & Polish | Polished observer dashboard, theme toggles, Mermaid diagram fixes | `feat: add evaluator dashboard and polish documentation` |
+| **M11** | Evaluator UI & Polish | Polished observer dashboard, theme toggles, Mermaid diagram fixes | `bb9003c`<br>`feat: add evaluator dashboard and polish documentation` |
+| **M12** | E2E Hardening & Cleanup | Time-based simulation script, separated frontend assets, key review | `feat: harden autonomous runtime and evaluator flow` |
 
 ---
 
@@ -4183,6 +4184,68 @@ Milestone 11 Evaluator Dashboard, Static Assets serving, API status endpoints, a
 
 ---
 
+## M12 · E2E Hardening & Cleanup
+
+**Status:** Complete  
+**Focus:** Separated HTML/CSS/JS frontend files, time-based E2E script verification  
+**Commit:** `feat: harden autonomous runtime and evaluator flow`  
+**Date:** 2026-08-09  
+
+### Objective
+
+Verify E2E autonomous background scheduler loops under simulated evaluator inputs (calling init once and waiting). Separate the frontend into clean, independent HTML, CSS, and JS files. Conduct cleanups and reviews.
+
+### Prompt
+
+```text
+# MILESTONE 12 — END-TO-END AUTONOMOUS VALIDATION, FRONTEND CLEANUP & HACKATHON HARDENING
+
+Act as a Senior Backend Engineer, AI Agent Engineer, Frontend Engineer, QA Engineer, DevOps Engineer, and Hackathon Reviewer.
+This milestone is primarily a VALIDATION, INTEGRATION, HARDENING, and CLEANUP milestone.
+```
+
+### What the Prompt Does
+
+Instructs the agent to refactor the monolithic HTML dashboard into `index.html`, `styles.css`, and `app.js` inside `app/static/`, create `scripts/verify_e2e_autonomous.py` to automate time-based cycle validation via uvicorn subprocesses with a local mock RSS server, and perform final repository security cleanups.
+
+### Implementation
+
+*   **Frontend Cleanup**: Created [styles.css](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/static/styles.css) and [app.js](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/static/app.js) and removed embedded code from [index.html](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/app/static/index.html).
+*   **Time-Based verification**: Created [verify_e2e_autonomous.py](file:///c:/Users/mohdh/Desktop/Projects/Autonomous%20AI%20Creator/scripts/verify_e2e_autonomous.py) running uvicorn in a subprocess, spinning up a mock RSS server on port 8001, mimicking evaluator actions (init once and wait), and validating feed timestamps, rationales, deduplication, and ordering.
+*   **API Security Check**: Reviewed configuration variables, verifying `.env` remains uncommitted and no secrets are exposed.
+
+### Technical Decisions
+
+*   **Mock RSS Server (Port 8001)**: Implemented a daemon `HTTPServer` in Python to serve local RSS feeds to prevent deadlocks and allow 100% offline, deterministic testing inside sandboxes.
+*   **Response Model Isolation**: Confirmed that Pydantic `PostModel` strips non-contract fields (like `agentId`) during API serialization, adjusting E2E scripts to verify contract compliance.
+
+### Testing
+
+*   All **75 tests** passed green.
+*   `verify_e2e_autonomous.py` ran successfully, proving autonomous feed publication, duplication prevention, and newest-first chronological sorting.
+
+### Autonomous Evaluator Simulation
+
+*   **Init**: Executed `POST /api/agent/init` -> generated UUID `agentId`.
+*   **Polling**: Executed `GET /api/agent/feed?agentId=<id>` periodically.
+*   **Outcome**: Background loops executed cycles, generating grounded posts from mock RSS entries successfully without any human intervention.
+
+### Frontend Structure
+
+*   `app/static/index.html`: Defines Semantic HTML structure.
+*   `app/static/styles.css`: Defines CSS theme variables and layout.
+*   `app/static/app.js`: Connects API and rendering logic.
+
+### Outcome
+
+Milestone 12 End-to-End Hardening, UI Separation, and Evaluator Simulation script completed successfully.
+
+### Limitations
+
+*   Centralized memory provider Breeth cloud storage is not implemented yet.
+
+---
+
 ## Development Timeline
 
 ```text
@@ -4218,8 +4281,11 @@ Milestone 11 Evaluator Dashboard, Static Assets serving, API status endpoints, a
  │                                                     │
  │                                                     └──── M11 ── Evaluator UI/UX & Final Documentation Polish
  │                                                           │     Aug 09, 2026
- │                                                           ▼
- │                                                         [Current State]
+ │                                                           │
+ │                                                           └──── M12 ── End-to-End Autonomous Validation & Frontend Cleanup
+ │                                                                 │     Aug 09, 2026
+ │                                                                 ▼
+ │                                                               [Current State]
 ```
 
 ---
@@ -4254,6 +4320,8 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Autonomous Publishing Feed**: Connected loop cycles directly to the queryable feed API, sorted newest-first, and secured by multi-constraint post validations.
 * **Autonomous Reliability & Recovery**: Failure isolation boundaries, configurable timeouts, bounded topic discovery retries, and defensive duplication prevention.
 * **Evaluator UI Dashboard**: Responsive observer dashboard serving HTML/CSS/JS static assets directly on the root endpoint.
+* **Separated Frontend Components**: Granular separation of UI styles (`styles.css`), routines (`app.js`), and templates (`index.html`).
+* **Time-Based Evaluator Simulation**: Automatic script validating scheduler boot-ups, chronologies, and feed duplicates offline via local mock server integrations.
 
 ### Intentionally Not Yet Implemented
 

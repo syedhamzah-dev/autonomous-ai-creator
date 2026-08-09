@@ -2836,6 +2836,43 @@ Instructs the agent to:
 4. **Unit Verification**: Appended status endpoint assertions in `tests/test_milestone10.py`.
 5. **Documentation Overhaul**: Redesigned `README.md` with concise status tables, workflow definitions, API schema blocks, and a screenshot `docs/images/dashboard.png` taken dynamically via browser tests.
 
+---
+
+## Milestone 12 — End-to-End Autonomous Validation, Frontend Cleanup & Hackathon Hardening
+
+### Objective
+
+Perform E2E verification of the autonomous background scheduling loops using a simulated evaluator model. Separate the frontend dashboard elements into independent HTML, CSS, and JS components. Conduct cleanups and reviews.
+
+### Role Given to the Coding Agent
+
+Senior Backend Engineer, AI Agent Engineer, Frontend Engineer, QA Engineer, DevOps Engineer, and Hackathon Reviewer.
+
+### Prompt
+
+```text
+# MILESTONE 12 — END-TO-END AUTONOMOUS VALIDATION, FRONTEND CLEANUP & HACKATHON HARDENING
+
+Act as a Senior Backend Engineer, AI Agent Engineer, Frontend Engineer, QA Engineer, DevOps Engineer, and Hackathon Reviewer.
+This milestone is primarily a VALIDATION, INTEGRATION, HARDENING, and CLEANUP milestone.
+```
+
+### What This Prompt Does
+
+Instructs the agent to:
+1. Refactor the observer dashboard into discrete `index.html`, `styles.css`, and `app.js` files inside `app/static/`.
+2. Write `scripts/verify_e2e_autonomous.py` to launch a FastAPI instance, initialize an agent exactly once via POST API, wait, query the published feed API, and assert that autonomous background loops run correctly, chronologically sort posts, and prevent duplication.
+3. Review directory cleanup, security keys, check for committed secrets, and complete git staging/commit operations under strict constraints.
+
+### Development Outcome
+
+1. **Frontend Refactoring**: Separated dashboard assets into `app/static/index.html`, `app/static/styles.css`, and `app/static/app.js`.
+2. **E2E Simulation Script**: Implemented `scripts/verify_e2e_autonomous.py` running uvicorn in a subprocess, mimicking evaluator interactions, and resolving HTTP socket deadlocks.
+3. **Robust Verification Run**: Confirmed E2E loop runs with 100% success (published feed count is populated autonomously, chronologically sorted newest-first, and duplicates are skipped).
+4. **Pytest Run**: Executed the full backend pytest suite (all 75 tests passed green).
+5. **Git Hardening**: Committed changes as `feat: harden autonomous runtime and evaluator flow` while maintaining a clean tree and verifying security keys.
+
+
 
 
 
