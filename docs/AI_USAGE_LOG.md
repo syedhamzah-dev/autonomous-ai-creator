@@ -63,6 +63,7 @@ Each milestone has its own scope, verification, documentation, and Git history. 
 | **M6** | Persistent Agent Memory | Local persistent agent-scoped memory & repetition checks | `c20c589a803890afdbb4741ceddd54e91722bec7`<br>`feat: add persistent agent memory` |
 | **M7** | Content Generation | Persona-consistent post text grounded in sources | `bdb265a657579875c1e27216423394c18deb45a7`<br>`feat: add autonomous content generation` |
 | **M8** | Scheduling Loop | Periodic autonomous cycle execution, states, locks, failure resilience | `9b6825f30322219804d38dafca4eaf810894f278`<br>`feat: add autonomous execution loop` |
+| **M9** | Autonomous Publishing | Connected background loops to the evaluator feed API, validation, sorting | `feat: implement autonomous publishing feed` |
 
 ---
 
@@ -4004,6 +4005,65 @@ Milestone 8 background autonomous scheduler loop fully implemented, tested, and 
 
 ---
 
+## M9 · Autonomous Publishing & Evaluator Feed
+
+**Status:** Complete  
+**Focus:** Connect periodic cycles to the evaluator-facing feed and validate posts  
+**Commit:** `feat: implement autonomous publishing feed`  
+**Date:** 2026-08-09  
+
+### Objective
+
+Connect the periodic autonomous scheduling loop to the evaluator-facing feed API, enforcing post quality constraints, sorting newest-first, preventing repetition via memory deduplication, and enabling evaluator feed queries.
+
+### Scope Boundaries
+
+> **Implemented:** Multi-constraint post quality validator, newest-first feed sorting, memory check using source URLs and tokens, global agent repository integrations, pytest test suite coverage, and 48-hour evaluation simulation script.  
+> **Deferred:** External cloud memory integration (Breeth adapter).
+
+### Coding-Agent Prompt
+
+> # MILESTONE 9 — AUTONOMOUS PUBLISHING & EVALUATOR FEED
+> Act as a Senior Backend Engineer, Autonomous AI Systems Architect, API Reliability Engineer, QA Engineer, Technical Writer, and Hackathon Evaluator.
+> The primary objective of this milestone is to ensure that the existing autonomous pipeline can actually produce, persist, and expose posts through the evaluator-facing feed without requiring additional human instructions after initialization.
+
+### What This Prompt Does
+
+Instructs the agent to connect background loop executions to the evaluator feed, validate published post fields (unique ID, valid timestamp, non-empty text, non-empty rationale, valid sources structure, and correct agent ID), implement memory checks for source URLs, and expose the feed sorted newest-first.
+
+### Implementation
+
+* **Repository Extensions**: Added `save_published_post` to persist feed items directly into the in-memory state.
+* **Newest-First Feed Retrieval**: Updated `AgentService.get_agent_feed` to sort feed posts chronologically in descending order, handling both timezone-aware `datetime` objects and ISO strings.
+* **Enhancements to Memory deduplication**: Updated `LocalFileMemoryRepository.is_repetitive` to perform exact URL matching against stored metadata (`sourceUrl` for topics and `sources` for posts) in addition to 60% keyword token intersection overlap checks.
+* **Integrations to Execution Flow**: Integrated `validate_post_to_publish` helper within the background scheduler loop. Valid posts are published immediately, while invalid ones are rejected and logged.
+* **Mock Tuning**: Enhanced `MockLLMClient` default structured decision reasons to cover selection reasons, current relevance, and comparative publication value.
+
+### Verification
+
+* **Unit & Integration Tests**: Added `tests/test_milestone9.py` checking all 12 test specifications (Initialization, accepted topic publishing, rejected topic omission, duplicate skipping, multiple posts, rationale depth, sources preservation, agent isolation, empty feed, unknown agent 404, feed static read, and post validation).
+* **48-Hour Evaluation Simulation**: Created `scripts/simulate_48h_evaluation.py` simulating 48 hourly cycles dynamically, verifying that posts accumulate properly, duplicates are blocked, rejections are ignored, and sorting is maintained.
+* **Regression Suite**: Pytest verifies M1–M9 test runs. Confirmed all 65 tests pass successfully.
+
+### Key Decisions
+
+* **Dual-Publishing Integration**: Retained `save_prepared_post` drafts list for backward compatibility with M8 tests, while also writing to `save_published_post` for feed exposure.
+* **Comprehensive Validation Rules**: Enforced strict Pydantic and manual string validations to block any malformed or mismatched posts.
+
+### Deviations
+
+None.
+
+### Outcome
+
+Milestone 9 autonomous publishing feed layer fully implemented, validated, and verified with 100% test coverage.
+
+### Git
+
+`feat: implement autonomous publishing feed`
+
+---
+
 ## Development Timeline
 
 ```text
@@ -4030,8 +4090,11 @@ Milestone 8 background autonomous scheduler loop fully implemented, tested, and 
  │                                   │
  │                                   └──── M8 ── Autonomous Execution Loop & Scheduling
  │                                         │     Aug 08, 2026
- │                                         ▼
- │                                       [Current State]
+ │                                         │
+ │                                         └──── M9 ── Autonomous Publishing & Feed Integration
+ │                                               │     Aug 09, 2026
+ │                                               ▼
+ │                                             [Current State]
 ```
 
 ---
@@ -4060,17 +4123,17 @@ Across milestones, the coding-agent workflow followed a consistent pattern:
 * **Stable Persona Engine**: Generates deterministic and consistent AI identities.
 * **Live Topic Discovery**: Fetches configured sources, normalizes URLs and datetimes, deduplicates URLs.
 * **Editorial Judgment Engine**: Evaluates candidates against persona, applies scoring and quality gates.
-* **Persistent Agent Memory**: Local persistent agent-scoped JSON storage with token keyword repetition checks.
+* **Persistent Agent Memory**: Local persistent agent-scoped JSON storage with token keyword repetition checks and source URL matching.
 * **Autonomous Content Generation**: Generates high-quality, grounded, persona-consistent social-media posts from accepted topics.
 * **Autonomous Execution Loop & Scheduling**: Background periodic execution cycles, state transitions, concurrency locking, and draft storages.
+* **Autonomous Publishing Feed**: Connected loop cycles directly to the queryable feed API, sorted newest-first, and secured by multi-constraint post validations.
 
 ### Intentionally Not Yet Implemented
 
 * **External Memory Service**: Connection to cloud memory providers like Breeth is not integrated yet.
-* **Autonomous Publishing**: Publishing decisions are not yet automated.
 
 ---
 
 ## Next Planned Capabilities
 
-The next development stages will connect generated draft posts to the persistent public feed endpoint while preserving chronological ordering and unique IDs.
+The next development stages will connect the local persistence memory layer with the external Breeth cloud storage adapter.

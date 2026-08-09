@@ -10,29 +10,33 @@ This project is built for a vibe-coding hackathon.
 
 The system is designed with a highly modular, decoupled architecture:
 
-```text
-Live Sources (News, Tech Blogs, RSS, Twitter)
-     │
-     ▼
-Topic Discovery (Scrapes and aggregates live information)
-     │
-     ▼
-Candidate Topics
-     │
-     ▼
-Editorial Judge (Scores and filters topics based on value)
-     │
-     ▼
-Persona Writer (Generates high-quality posts with consistent voice/persona)
-     │
-     ▼
-Memory / Breeth (Checks repetition, matches context, stores published history)
-     │
-     ▼
-Publishing Scheduler (Autonomously queues and posts over ~48h)
-     │
-     ▼
-Feed API (Exposes GET /api/agent/feed for evaluators)
+```mermaid
+flowchart TD
+    subgraph Discovery
+        A[Live RSS/Atom Sources] --> B[Topic Discovery Service]
+        B --> C[Topic Candidates]
+    end
+
+    subgraph Evaluation
+        C --> D[Deduplication check via Memory]
+        D --> E[Editorial Judgment Engine]
+    end
+
+    subgraph Production
+        E -->|REJECT| F[Log Rejection in Memory]
+        E -->|ACCEPT| G[Content Generator Service]
+    end
+
+    subgraph Publishing
+        G --> H[Multi-Constraint Post Validation]
+        H -->|VALID| I[Persist to Agent Feed]
+        I --> J[Store Published Topic & Post in Memory]
+        H -->|INVALID| K[Skip Publishing]
+    end
+
+    subgraph Exposure
+        I --> L[GET /api/agent/feed]
+    end
 ```
 
 ### Milestone Progress
@@ -44,6 +48,7 @@ Feed API (Exposes GET /api/agent/feed for evaluators)
 * **Milestone 6**: Implemented the **Persistent Agent Memory** layer with agent-scoped local JSON storage and token keyword overlap checks.
 * **Milestone 7**: Implemented the **Autonomous Content Generation** subsystem, converting accepted candidates into structured post text aligned with the persona.
 * **Milestone 8**: Implemented the **Autonomous Execution Loop & Scheduling** layer, triggering periodic loops inside the application lifespan.
+* **Milestone 9**: Connected the autonomous loop to the feed layer, added multi-constraint post validation, and exposed queryable feeds per agent.
 
 ---
 
@@ -484,7 +489,6 @@ pytest
 
 ## Current Limitations & Unimplemented Features
 The following features are **NOT** implemented yet:
-- **Autonomous Publishing**: Publishing decisions are not yet automated.
 - **External Memory Service**: External cloud-based memory layers (like Breeth) are not integrated yet.
 
 ---
@@ -499,5 +503,5 @@ The following features are **NOT** implemented yet:
 - [x] **Milestone 6**: Persistent Agent Memory layer with local JSON file repositories and repetition checks.
 - [x] **Milestone 7**: Autonomous Content Generation converting accepted topics into persona-consistent social-media posts.
 - [x] **Milestone 8**: Autonomous Execution Loop and Scheduling for continuous loop operations.
-- [ ] **Milestone 9**: Autonomous Publishing & Feed Integration.
+- [x] **Milestone 9**: Autonomous Publishing & Feed Integration.
 - [ ] **Milestone 10**: Memory integration via external memory provider Breeth.

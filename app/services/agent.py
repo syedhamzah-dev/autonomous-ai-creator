@@ -43,7 +43,7 @@ class AgentService:
 
     def get_agent_feed(self, agent_id: str) -> List[Dict[str, Any]]:
         """
-        Retrieves the posts feed for an agent.
+        Retrieves the posts feed for an agent, sorted newest first.
         
         Args:
             agent_id: The unique identifier of the agent.
@@ -58,6 +58,15 @@ class AgentService:
             raise KeyError(f"Agent with ID '{agent_id}' does not exist.")
             
         posts = self.repository.get_agent_posts(agent_id)
-        if posts is None:
+        if not posts:
             return []
-        return posts
+
+        # Sort newest posts first (by createdAt descending)
+        from datetime import datetime
+        def parse_created_at(p: Dict[str, Any]) -> datetime:
+            val = p.get("createdAt")
+            if isinstance(val, str):
+                return datetime.fromisoformat(val.replace("Z", "+00:00"))
+            return val
+
+        return sorted(posts, key=parse_created_at, reverse=True)

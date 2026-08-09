@@ -18,6 +18,51 @@ from app.services.content_generator import ContentGeneratorService
 
 logger = logging.getLogger("autonomous_creator")
 
+
+def validate_post_to_publish(post: GeneratedPost, agent_id: str, existing_posts: List[Dict[str, Any]]) -> bool:
+    """
+    Validate the generated post against multiple constraints before publishing to the feed:
+    - unique ID
+    - valid timestamp
+    - non-empty text
+    - non-empty rationale
+    - valid source structure
+    - correct agent association
+    """
+    # 1. Unique ID
+    if not post.id or not isinstance(post.id, str) or not post.id.strip():
+        return False
+    # Check duplicate ID in existing feed posts
+    existing_ids = {p.get("id") for p in existing_posts}
+    if post.id in existing_ids:
+        return False
+        
+    # 2. Valid timestamp
+    if not post.createdAt or not isinstance(post.createdAt, datetime):
+        return False
+        
+    # 3. Non-empty text
+    if not post.text or not isinstance(post.text, str) or not post.text.strip():
+        return False
+        
+    # 4. Non-empty rationale
+    if not post.rationale or not isinstance(post.rationale, str) or not post.rationale.strip():
+        return False
+        
+    # 5. Valid source structure
+    if not isinstance(post.sources, list):
+        return False
+    for source in post.sources:
+        if not isinstance(source, str) or not source.strip():
+            return False
+            
+    # 6. Correct agent association
+    if post.agentId != agent_id:
+        return False
+        
+    return True
+
+
 class AutonomousExecutionService:
     """
     Coordinates one execution cycle for a specific agent:
@@ -94,7 +139,9 @@ class AutonomousExecutionService:
             # Step 2: Duplication check and Editorial Evaluation
             for candidate in candidates:
                 # Deduplication: query memory repository
-                is_duplicate = await self.memory_service.is_repetitive(agent_id, candidate.title)
+                is_duplicate = await self.memory_service.is_repetitive(
+                    agent_id, candidate.title, source_url=candidate.sourceUrl
+                )
                 if is_duplicate:
                     result["rejectedCount"] += 1
                     logger.info(f"[TOPIC_REJECTED] Rejected candidate '{candidate.title}' (Reason: Repetitive / covered in memory).")
@@ -151,6 +198,14 @@ class AutonomousExecutionService:
 
                 # Save generated post to internal repository state as draft/prepared post (not exposed to feed)
                 self.agent_repo.save_prepared_post(agent_id, post.model_dump(by_alias=True))
+
+                # Validate and publish the post to the evaluator-facing feed
+                existing_posts = self.agent_repo.get_agent_posts(agent_id) or []
+                if validate_post_to_publish(post, agent_id, existing_posts):
+                    self.agent_repo.save_published_post(agent_id, post.model_dump(by_alias=True))
+                    logger.info(f"[CONTENT_PUBLISHED] Successfully validated and published post {post.id} to agent feed.")
+                else:
+                    logger.warning(f"[POST_VALIDATION_FAILED] Generated post {post.id} is invalid and will not be published.")
 
                 # Store post in Persistent memory to prevent future cycles from repeating this topic
                 post_memory = AgentMemory(

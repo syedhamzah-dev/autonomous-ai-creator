@@ -152,9 +152,9 @@ class MockLLMClient(BaseLLMClient):
                 "decision": "ACCEPT",
                 "score": 8.5,
                 "reasons": [
-                    f"Directly fits the agent's interest in '{matched_interest}'.",
-                    "Provides high quality and credible technical analysis.",
-                    "Timely development matching current trends."
+                    f"Topic selected because it directly aligns with the agent's core tech interests, focusing on '{matched_interest}' to fulfill our information coverage mission.",
+                    "Highly relevant now due to current trends and live public discussion surrounding these framework modifications.",
+                    "Provides detailed, actionable technical analysis that offers significantly more depth and reader value than other generic high-level tech news candidates."
                 ],
                 "relevanceScore": 9.5,
                 "freshnessScore": 9.0,

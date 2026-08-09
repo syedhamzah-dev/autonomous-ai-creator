@@ -45,10 +45,10 @@ class BaseMemory(ABC):
         pass
 
     @abstractmethod
-    async def is_repetitive(self, agent_id: str, content: str) -> bool:
+    async def is_repetitive(self, agent_id: str, content: str, source_url: Optional[str] = None) -> bool:
         """
         Check whether the proposed content/topic is repetitive or closely matches
-        previously published posts or topics.
+        previously published posts or topics, by content tokens or source URLs.
         """
         pass
 
@@ -184,13 +184,25 @@ class LocalFileMemoryRepository(BaseMemory):
         memories.sort(key=lambda m: m.createdAt, reverse=True)
         return memories[:limit]
 
-    async def is_repetitive(self, agent_id: str, content: str) -> bool:
+    async def is_repetitive(self, agent_id: str, content: str, source_url: Optional[str] = None) -> bool:
         if not agent_id:
             raise ValueError("Agent ID cannot be empty.")
         if not content:
             return False
 
         memories = self._load_memories(agent_id)
+
+        # Check source URL repetition
+        if source_url:
+            for m in memories:
+                if m.type == "PUBLISHED_TOPIC":
+                    stored_url = m.metadata.get("sourceUrl") if m.metadata else None
+                    if stored_url and stored_url == source_url:
+                        return True
+                elif m.type == "PUBLISHED_POST":
+                    stored_sources = m.metadata.get("sources") if m.metadata else []
+                    if stored_sources and source_url in stored_sources:
+                        return True
         
         # Simple stop-words set to filter noise
         stop_words = {"in", "the", "and", "of", "for", "with", "on", "a", "an", "new", "discovered", "release", "patch", "is", "at", "to"}
@@ -241,5 +253,5 @@ class MemoryService(BaseMemory):
     async def recent(self, agent_id: str, limit: int = 10) -> List[AgentMemory]:
         return await self.repository.recent(agent_id, limit)
 
-    async def is_repetitive(self, agent_id: str, content: str) -> bool:
-        return await self.repository.is_repetitive(agent_id, content)
+    async def is_repetitive(self, agent_id: str, content: str, source_url: Optional[str] = None) -> bool:
+        return await self.repository.is_repetitive(agent_id, content, source_url)

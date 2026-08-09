@@ -2719,3 +2719,43 @@ Instructs the agent to coordinate M4–M7 components into a single `run_cycle` l
 
 Implemented AutonomousExecutionService, AgentScheduler, repository status flags, lifespan hooks, and E2E unit and scheduling tests.
 
+---
+
+## Milestone 9 — Autonomous Publishing & Evaluator Feed
+
+### Objective
+
+Establish the autonomous publishing pipeline by connecting the periodic background loop to the public queryable feed API, enforcing multi-constraint post validations, preventing duplicate topic/source url repetition, and providing evaluator feed access.
+
+### Role Given to the Coding Agent
+
+Senior Backend Engineer, Autonomous AI Systems Architect, API Reliability Engineer, QA Engineer, Technical Writer, and Hackathon Evaluator.
+
+### Prompt
+
+```text
+# MILESTONE 9 — AUTONOMOUS PUBLISHING & EVALUATOR FEED
+
+Act as a Senior Backend Engineer, Autonomous AI Systems Architect, API Reliability Engineer, QA Engineer, Technical Writer, and Hackathon Evaluator.
+The primary objective of this milestone is to ensure that the existing autonomous pipeline can actually produce, persist, and expose posts through the evaluator-facing feed without requiring additional human instructions after initialization.
+```
+
+### What This Prompt Does
+
+Instructs the agent to:
+1. Connect the autonomous execution cycle with the feed layer.
+2. Implement schema and quality validation for published posts (unique ID, valid timestamp, non-empty text/rationale, source structure, correct agent).
+3. Enhance the memory duplication check using source URLs and title content tokens.
+4. Expose the feed sorted newest-first for the initialized agent.
+5. Create comprehensive tests and simulated 48-hour evaluations to verify behavior.
+
+### Development Outcome
+
+1. **Repository & Service Extensions**: Added `save_published_post` to the repository, and updated `get_agent_feed` to sort posts newest-first.
+2. **Duplication Guard**: Updated memory checks in `LocalFileMemoryRepository.is_repetitive` to deduplicate by both content tokens and source URLs.
+3. **Execution & Validation Integration**: Added `validate_post_to_publish` quality constraints to `AutonomousExecutionService.run_cycle` to ensure invalid posts never enter the feed.
+4. **Mock Enhancements**: Tuned `MockLLMClient` to return meaningful multi-part rationale (selection criteria, relevance, worth compared to others).
+5. **Deterministic Testing**: Created `tests/test_milestone9.py` checking all 12 validation and lifecycle rules.
+6. **48-Hour Simulation**: Built `scripts/simulate_48h_evaluation.py` simulating 48 cycles of discovery, evaluation, deduplication, and feed retrieval.
+
+
