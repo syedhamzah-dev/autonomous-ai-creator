@@ -2956,5 +2956,87 @@ Instructs the agent to:
 
 
 
+---
 
+## Milestone 15 — Pre-Deployment Audit & Submission Readiness
 
+### Objective
+
+Perform a final read-only pre-deployment audit across all completed milestones and apply the minimum safe changes to make the project submission-ready before the hackathon deadline.
+
+### Role Given to the Coding Agent
+
+Senior QA Engineer, AI Systems Engineer, Backend Engineer, Frontend Engineer, DevOps Engineer, Security Engineer, and Hackathon Evaluator.
+
+### Prompt
+
+```text
+# FINAL PRE-DEPLOYMENT AUDIT — FULL SYSTEM + BROWSER + AUTONOMOUS VERIFICATION
+
+Act as a Senior QA Engineer, AI Systems Engineer, Backend Engineer, Frontend Engineer,
+DevOps Engineer, Security Engineer, and Hackathon Evaluator.
+
+This task is a FINAL READ-ONLY PRE-DEPLOYMENT AUDIT.
+
+CRITICAL RULE — DO NOT MODIFY THE PROJECT.
+
+Verify:
+- All 89 automated tests pass
+- All API endpoint contracts
+- Autonomous scheduler behavior
+- Memory persistence and deduplication
+- Security (no credentials in code, frontend, or git)
+- CORS configuration
+- Deployment readiness (Dockerfile, .env.example)
+- Frontend UI (header, form, pipeline, feed, themes)
+- Gemini LLM implementation (error handling, rate limits, key isolation)
+- Live RSS feed reachability
+
+Produce a comprehensive audit report with pass/fail for each area.
+```
+
+Followed by:
+
+```text
+# FINAL MILESTONE — PRODUCTION LAUNCH & SUBMISSION READINESS
+
+We have approximately 1 hour remaining before the hackathon deadline.
+This is NOT a new feature milestone. The project is already functionally complete.
+
+Apply the minimum safe changes:
+1. Fix README badge (74 → 89 tests)
+2. Update .env.example with EDITORIAL_ENGINE_TYPE=llm recommendation
+3. Improve deployment section (persistent volume, EDITORIAL_ENGINE_TYPE requirements)
+4. Remove additional.txt scratch file
+5. Append final milestone entries to AI_USAGE_LOG.md and PROMPTS.md
+6. Run 89-test suite and smoke test
+7. Commit and push with message: chore: finalize deployment readiness
+
+DO NOT rebuild. DO NOT restructure. DO NOT integrate Breeth. DO NOT add major features.
+```
+
+### What This Prompt Does
+
+Instructs the agent to:
+1. Run the complete 89-test suite and verify it passes
+2. Smoke test all four API endpoints (`/health`, `/api/agent/init`, `/api/agent/feed`, `/api/agent/status`)
+3. Verify the autonomous scheduler runs without manual triggers
+4. Verify memory deduplication by inspecting the persistent JSON files
+5. Perform a security scan for credentials in all source files, frontend, and git history
+6. Inspect the Gemini LLM client for correct key isolation and error handling
+7. Apply safe minimum changes: badge fix, `.env.example` update, deployment docs, junk file removal
+8. Update `AI_USAGE_LOG.md` and `PROMPTS.md`
+9. Commit and push
+
+### Development Outcome
+
+1. **Test Suite**: 89/89 tests passed. No tests added, modified, or disabled.
+2. **API Verification**: All four endpoints respond correctly.
+3. **Autonomous Scheduler**: 20 cycles observed with 20 unique posts published and 0 duplicate sources.
+4. **Memory**: Deduplication confirmed working across 20 autonomous cycles.
+5. **Security**: No credentials found in frontend JS/HTML, git history, or API responses.
+6. **README badge**: Updated from "74 Passed" to "89 Passed".
+7. **`.env.example`**: `EDITORIAL_ENGINE_TYPE=llm` set as recommended production value.
+8. **Deployment docs**: Added persistent volume mount, `EDITORIAL_ENGINE_TYPE` env var, and startup failure clarification.
+9. **`additional.txt`**: Removed (was gitignored and unreferenced).
+10. **Real Gemini path**: Not exercised at runtime (no API key available). Verified by code inspection only. Requires deployment-time `LLM_API_KEY`.

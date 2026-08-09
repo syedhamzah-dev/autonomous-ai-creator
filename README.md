@@ -4,7 +4,7 @@ An autonomous AI agent designed to independently discover live tech topics, eval
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI Framework](https://img.shields.io/badge/FastAPI-0.100%2B-green.svg)](https://fastapi.tiangolo.com/)
-[![Test Suite Status](https://img.shields.io/badge/Tests-74%20Passed-brightgreen.svg)](https://github.com/)
+[![Test Suite Status](https://img.shields.io/badge/Tests-89%20Passed-brightgreen.svg)](https://github.com/)
 [![Hackathon Focus](https://img.shields.io/badge/Hackathon-Vibe--Coding-orange.svg)](https://github.com/)
 
 ---
@@ -237,7 +237,8 @@ User / Browser
 This application is designed to run as a **persistent web service** so that the background scheduler loops run autonomously.
 
 ### 1. Required Deployment Environment Variables
-*   `LLM_API_KEY`: Your Gemini API developer key (Free Tier).
+*   `LLM_API_KEY`: Your Gemini API developer key (Free Tier). **Required** — startup will fail without it in dev/prod mode.
+*   `EDITORIAL_ENGINE_TYPE`: Set to `llm` for production semantic editorial judgment via Gemini.
 *   `CORS_ORIGINS`: Comma-separated allowed origins (e.g. `https://your-frontend.com` or `*` for public access).
 *   `APP_ENV`: Set to `prod` for production.
 *   `PORT`: Target port (defaults to `8000`).
@@ -246,7 +247,7 @@ This application is designed to run as a **persistent web service** so that the 
 You can deploy directly to a standard server (e.g. VPS, EC2) by cloning the repository and running:
 ```bash
 pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+LLM_API_KEY="your-real-key" EDITORIAL_ENGINE_TYPE="llm" uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 3. Containerized Deployment (Docker)
@@ -256,15 +257,23 @@ We include a standard production `Dockerfile` in the root of the repository. To 
 docker build -t autonomous-creator .
 
 # Run the container (binds to host port 8000, passing API key)
-docker run -p 8000:8000 -e LLM_API_KEY="your-gemini-api-key" autonomous-creator
+docker run -p 8000:8000 \
+  -e LLM_API_KEY="your-gemini-api-key" \
+  -e EDITORIAL_ENGINE_TYPE="llm" \
+  -v /host/data/memory:/app/data/memory \
+  autonomous-creator
 ```
+
+> **Important:** Mount a persistent volume for `/app/data/memory` to preserve agent memory across container restarts.
 
 ### 4. Direct Cloud Deployment (Render, Railway, Fly.io)
 For platforms like Render or Railway:
 1.  Create a new **Web Service** pointing to this GitHub repository.
 2.  Set the start command to: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 3.  Add `LLM_API_KEY` as a **Secret Environment Variable**.
-4.  Do *not* deploy on serverless function models (like Vercel or AWS Lambda) as background execution loops require a persistent server process.
+4.  Add `EDITORIAL_ENGINE_TYPE=llm` as an environment variable.
+5.  Enable **Persistent Disk** and mount it to `/app/data/memory` to preserve memory across redeploys.
+6.  Do *not* deploy on serverless function models (like Vercel or AWS Lambda) as background execution loops require a persistent server process.
 
 ---
 
